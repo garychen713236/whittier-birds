@@ -51,8 +51,8 @@
     font-size: 14px;
     background: rgba(255,255,255,.92);
     color: var(--text);
-    flex: 1 1 180px;
-    min-width: 140px;
+    flex: 1 1 160px;
+    min-width: 130px;
     outline: none;
   }
   .controls input:focus, .controls select:focus {
@@ -62,7 +62,29 @@
     color: rgba(255,255,255,.85);
     font-size: 13px;
     white-space: nowrap;
-    margin-left: auto;
+  }
+  .seen-count {
+    color: #a7f3d0;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  /* Clear All button */
+  .btn-clear {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 2px solid rgba(255,255,255,.5);
+    background: rgba(255,255,255,.12);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s, border-color .15s;
+  }
+  .btn-clear:hover {
+    background: rgba(255,80,80,.35);
+    border-color: rgba(255,180,180,.7);
   }
 
   /* ── Category divider ────────────────────────────────────── */
@@ -93,14 +115,31 @@
     border-radius: 14px;
     overflow: hidden;
     box-shadow: var(--shadow);
-    transition: transform .18s, box-shadow .18s;
+    transition: transform .18s, box-shadow .18s, border-color .2s;
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
   }
   .card:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 28px rgba(0,0,0,.14);
+  }
+  /* Seen today highlight */
+  .card.seen {
+    border-color: #34d399;
+    box-shadow: 0 0 0 3px rgba(52,211,153,.25), var(--shadow);
+  }
+  .card.seen .card-img-wrap::after {
+    content: "✓ Seen Today";
+    position: absolute;
+    bottom: 8px; right: 8px;
+    background: #059669;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    letter-spacing: .3px;
   }
 
   /* ── Image area ──────────────────────────────────────────── */
@@ -112,14 +151,12 @@
   }
   .card-img-wrap img {
     width: 100%;
-    height: auto;          /* full image, no crop */
+    height: auto;
     display: block;
     object-fit: contain;
     transition: transform .3s;
   }
-  .card:hover .card-img-wrap img {
-    transform: scale(1.03);
-  }
+  .card:hover .card-img-wrap img { transform: scale(1.03); }
   .card-img-wrap .no-photo {
     width: 100%;
     min-height: 160px;
@@ -132,36 +169,28 @@
     gap: 8px;
     padding: 32px;
   }
-  .card-img-wrap .no-photo svg {
-    opacity: .35;
-  }
+  .card-img-wrap .no-photo svg { opacity: .35; }
 
-  /* ── Badge (category) ────────────────────────────────────── */
+  /* ── Badges ──────────────────────────────────────────────── */
   .cat-badge {
     position: absolute;
     top: 8px; left: 8px;
     background: rgba(45,106,79,.82);
     color: #fff;
-    font-size: 10px;
-    font-weight: 700;
+    font-size: 10px; font-weight: 700;
     padding: 3px 8px;
     border-radius: 20px;
     letter-spacing: .3px;
     backdrop-filter: blur(4px);
     max-width: calc(100% - 16px);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-
-  /* ── Number badge ────────────────────────────────────────── */
   .num-badge {
     position: absolute;
     top: 8px; right: 8px;
     background: rgba(0,0,0,.45);
     color: #fff;
-    font-size: 11px;
-    font-weight: 600;
+    font-size: 11px; font-weight: 600;
     padding: 2px 7px;
     border-radius: 20px;
     backdrop-filter: blur(4px);
@@ -175,74 +204,128 @@
     flex-direction: column;
     gap: 10px;
   }
+  .card-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
   .card-body h2 {
     font-size: 17px;
     color: var(--green);
     line-height: 1.3;
+    flex: 1;
+  }
+
+  /* ── Seen Today checkbox ─────────────────────────────────── */
+  .seen-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+    user-select: none;
+    padding: 3px 0;
+    transition: color .15s;
+  }
+  .seen-label:hover { color: #059669; }
+  .seen-label input[type="checkbox"] { display: none; }
+  .seen-checkbox-box {
+    width: 20px; height: 20px;
+    border: 2px solid #d1d5db;
+    border-radius: 6px;
+    background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color .15s, background .15s;
+    flex-shrink: 0;
+  }
+  .seen-label input:checked + .seen-checkbox-box {
+    background: #059669;
+    border-color: #059669;
+  }
+  .seen-label input:checked + .seen-checkbox-box::after {
+    content: "✓";
+    color: #fff;
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 1;
+  }
+  .seen-label input:checked ~ .seen-text {
+    color: #059669;
   }
 
   /* ── Info rows ───────────────────────────────────────────── */
-  .info-block {
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-  }
+  .info-block { display: flex; flex-direction: column; gap: 7px; }
   .info-row {
-    display: flex;
-    gap: 8px;
+    display: flex; gap: 8px;
     align-items: flex-start;
-    font-size: 13px;
-    line-height: 1.5;
+    font-size: 13px; line-height: 1.5;
   }
   .info-icon {
-    flex-shrink: 0;
-    width: 20px;
-    text-align: center;
-    margin-top: 1px;
-    font-size: 15px;
+    flex-shrink: 0; width: 20px;
+    text-align: center; margin-top: 1px; font-size: 15px;
   }
   .info-label {
-    font-weight: 600;
-    color: var(--green2);
-    min-width: 52px;
-    flex-shrink: 0;
+    font-weight: 600; color: var(--green2);
+    min-width: 52px; flex-shrink: 0;
   }
-  .info-text {
-    color: #444;
-  }
+  .info-text { color: #444; }
 
   /* ── Protected tag ───────────────────────────────────────── */
   .protected-tag {
     display: inline-block;
-    background: #fef3c7;
-    color: #92400e;
-    font-size: 10px;
-    font-weight: 700;
-    padding: 2px 7px;
-    border-radius: 12px;
+    background: #fef3c7; color: #92400e;
+    font-size: 10px; font-weight: 700;
+    padding: 2px 7px; border-radius: 12px;
     border: 1px solid #fcd34d;
-    margin-left: 6px;
-    vertical-align: middle;
+    margin-left: 6px; vertical-align: middle;
   }
 
   /* ── Footer ──────────────────────────────────────────────── */
   footer {
-    text-align: center;
-    padding: 28px;
-    color: var(--muted);
-    font-size: 12px;
+    text-align: center; padding: 28px;
+    color: var(--muted); font-size: 12px;
     border-top: 1px solid var(--border);
     background: #fff;
   }
 
   /* ── Empty state ─────────────────────────────────────────── */
   .empty-msg {
-    grid-column: 1/-1;
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--muted);
-    font-size: 16px;
+    grid-column: 1/-1; text-align: center;
+    padding: 60px 20px; color: var(--muted); font-size: 16px;
   }
+
+  /* ── Clear All confirmation modal ────────────────────────── */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 999;
+    background: rgba(0,0,0,.45);
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 16px;
+    padding: 32px 28px 24px;
+    max-width: 360px; width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  }
+  .modal h3 { font-size: 20px; color: var(--green); margin-bottom: 10px; }
+  .modal p  { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
+  .modal-btns { display: flex; gap: 12px; justify-content: center; }
+  .modal-btns button {
+    padding: 10px 24px; border-radius: 8px;
+    font-size: 14px; font-weight: 600; cursor: pointer; border: none;
+  }
+  .btn-cancel { background: #f3f4f6; color: #374151; }
+  .btn-cancel:hover { background: #e5e7eb; }
+  .btn-confirm { background: #ef4444; color: #fff; }
+  .btn-confirm:hover { background: #dc2626; }
 
   @media (max-width: 500px) {
     .card-body h2 { font-size: 15px; }
@@ -262,10 +345,29 @@
   <select id="catSelect" onchange="render()">
     <option value="">All Categories</option>
   </select>
+  <select id="seenFilter" onchange="render()">
+    <option value="">All Birds</option>
+    <option value="seen">✅ Seen Today Only</option>
+    <option value="unseen">🔲 Not Seen Yet</option>
+  </select>
   <span class="count" id="countLabel"></span>
+  <span class="seen-count" id="seenLabel"></span>
+  <button class="btn-clear" onclick="confirmClear()">🗑 Clear All Seen</button>
 </div>
 
 <div id="main"></div>
+
+<!-- Confirmation modal -->
+<div class="modal-overlay" id="clearModal">
+  <div class="modal">
+    <h3>Clear All Checkmarks?</h3>
+    <p>This will uncheck all "Seen Today" boxes and give you a fresh start for your next visit.</p>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-confirm" onclick="clearAll()">Yes, Clear All</button>
+    </div>
+  </div>
+</div>
 
 <footer>
   Whittier Narrows Nature Center Bird Guide &nbsp;|&nbsp;
@@ -274,7 +376,6 @@
 </footer>
 
 <script>
-// ── Bird data (generated from 300_birds_desc.csv) ─────────────────────────
 const birds = [
   [1,"Raptors","Red-tailed Hawk","Large hawk; broad rounded wings. Both sexes: brick-red tail (adults), streaked belly band. Female larger.","Small mammals, rodents, rabbits, birds","Large stick nest in tall trees or cliffs; reuses annually","Red_tailed_Hawk.jpg",""],
   [2,"Raptors","Red-shouldered Hawk","Medium hawk. Both: rusty barred chest, bold black-and-white wing pattern, banded tail. Female larger.","Frogs, snakes, small mammals, crayfish","Stick nest in tall deciduous trees near water","Red_shouldered_Hawk.jpg",""],
@@ -577,15 +678,50 @@ const birds = [
   [299,"Rare Visitors","Lawrence's Warbler","Both: hybrid of Golden-winged and Blue-winged Warblers; yellow-and-black patterned. Variable.","Insects and spiders","Cup nest near ground in dense shrubby growth","Lawrences_Warbler.jpg",""],
   [300,"Rare Visitors","Snowy Plover","Both: small pale plover; incomplete breast band, dark ear patch. Male has darker markings.","Small invertebrates, marine worms","Scrape nest on open sandy beaches or alkali flats","Snowy_Plover.jpg",""]
 ];
-// columns: [#, category, name, identification, food, nesting, photoFilename, imageUrl]
 
-const PHOTO_DIR = "images/";   // sub-folder relative to index.html
+const PHOTO_DIR = "images/";
+const STORAGE_KEY = "wnnc_seen_birds";
+const protectedNames = new Set(["White-tailed Kite","Least Bell's Vireo","California Gnatcatcher"]);
 
-const protectedNames = new Set([
-  "White-tailed Kite","Least Bell's Vireo","California Gnatcatcher"
-]);
+// ── Seen state: stored in localStorage keyed by bird # ────────────────────
+function loadSeen() {
+  try { return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]")); }
+  catch(e) { return new Set(); }
+}
+function saveSeen(set) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify([...set]));
+}
 
-// Build category list
+let seenSet = loadSeen();
+
+function toggleSeen(num) {
+  if (seenSet.has(num)) seenSet.delete(num);
+  else seenSet.add(num);
+  saveSeen(seenSet);
+  // Update just this card's visual without full re-render
+  const card = document.querySelector(`.card[data-num="${num}"]`);
+  const cb   = document.querySelector(`#cb_${num}`);
+  if (card) card.classList.toggle("seen", seenSet.has(num));
+  if (cb)   cb.checked = seenSet.has(num);
+  updateSeenLabel();
+}
+
+function updateSeenLabel() {
+  document.getElementById("seenLabel").textContent =
+    `✅ ${seenSet.size} / ${birds.length} seen today`;
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────
+function confirmClear() { document.getElementById("clearModal").classList.add("active"); }
+function closeModal()   { document.getElementById("clearModal").classList.remove("active"); }
+function clearAll() {
+  seenSet.clear();
+  saveSeen(seenSet);
+  closeModal();
+  render();
+}
+
+// ── Build category dropdown ───────────────────────────────────────────────
 const allCats = [...new Set(birds.map(b => b[1]))];
 const sel = document.getElementById("catSelect");
 allCats.forEach(c => {
@@ -594,10 +730,12 @@ allCats.forEach(c => {
   sel.appendChild(o);
 });
 
+// ── Main render ───────────────────────────────────────────────────────────
 function render() {
-  const q   = document.getElementById("searchBox").value.toLowerCase().trim();
-  const cat = document.getElementById("catSelect").value;
-  const main = document.getElementById("main");
+  const q          = document.getElementById("searchBox").value.toLowerCase().trim();
+  const cat        = document.getElementById("catSelect").value;
+  const seenFilter = document.getElementById("seenFilter").value;
+  const mainEl     = document.getElementById("main");
 
   let filtered = birds;
   if (cat)  filtered = filtered.filter(b => b[1] === cat);
@@ -606,38 +744,39 @@ function render() {
     b[3].toLowerCase().includes(q) ||
     b[4].toLowerCase().includes(q)
   );
+  if (seenFilter === "seen")   filtered = filtered.filter(b => seenSet.has(b[0]));
+  if (seenFilter === "unseen") filtered = filtered.filter(b => !seenSet.has(b[0]));
 
   document.getElementById("countLabel").textContent =
-    filtered.length + " of " + birds.length + " species";
+    `${filtered.length} of ${birds.length} species`;
+  updateSeenLabel();
 
   if (!filtered.length) {
-    main.innerHTML = '<div class="grid"><div class="empty-msg">🔍 No birds found matching your search.</div></div>';
+    mainEl.innerHTML = '<div class="grid"><div class="empty-msg">🔍 No birds found matching your search.</div></div>';
     return;
   }
 
-  // Group by category (preserving original order)
-  const groups = {};
-  const groupOrder = [];
+  // Group by category
+  const groups = {}, groupOrder = [];
   filtered.forEach(b => {
     if (!groups[b[1]]) { groups[b[1]] = []; groupOrder.push(b[1]); }
     groups[b[1]].push(b);
   });
 
   let html = "";
-  groupOrder.forEach(cat => {
-    // Only show divider if not filtering by single category (or always show for clarity)
-    html += `<div class="cat-divider">🐦 ${cat} <span style="font-weight:400;font-size:13px;opacity:.8">(${groups[cat].length})</span></div>`;
+  groupOrder.forEach(c => {
+    html += `<div class="cat-divider">🐦 ${c} <span style="font-weight:400;font-size:13px;opacity:.8">(${groups[c].length})</span></div>`;
     html += '<div class="grid">';
-    groups[cat].forEach(b => {
-      const [num, category, name, id, food, nesting, photo, imgUrl] = b;
+    groups[c].forEach(b => {
+      const [num, category, name, id, food, nesting, photo] = b;
+      const isSeen      = seenSet.has(num);
       const isProtected = protectedNames.has(name);
-      const photoPath = PHOTO_DIR + photo;
+      const photoPath   = PHOTO_DIR + photo;
 
       const imgTag = photo
         ? `<img src="${photoPath}" alt="${name}" loading="lazy"
                onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
         : "";
-
       const noPhotoDiv = `
         <div class="no-photo" ${photo ? 'style="display:none"' : ''}>
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -650,15 +789,21 @@ function render() {
         </div>`;
 
       html += `
-      <div class="card">
+      <div class="card${isSeen ? ' seen' : ''}" data-num="${num}">
         <div class="card-img-wrap">
-          ${imgTag}
-          ${noPhotoDiv}
+          ${imgTag}${noPhotoDiv}
           <span class="cat-badge">${category}</span>
           <span class="num-badge">#${num}</span>
         </div>
         <div class="card-body">
-          <h2>${name}${isProtected ? '<span class="protected-tag">⚠ Protected</span>' : ''}</h2>
+          <div class="card-title-row">
+            <h2>${name}${isProtected ? '<span class="protected-tag">⚠ Protected</span>' : ''}</h2>
+            <label class="seen-label" title="Mark as seen today" onclick="toggleSeen(${num})">
+              <input type="checkbox" id="cb_${num}" ${isSeen ? 'checked' : ''}>
+              <span class="seen-checkbox-box"></span>
+              <span class="seen-text">Seen</span>
+            </label>
+          </div>
           <div class="info-block">
             <div class="info-row">
               <span class="info-icon">🔍</span>
@@ -682,8 +827,13 @@ function render() {
     html += '</div>';
   });
 
-  main.innerHTML = html;
+  mainEl.innerHTML = html;
 }
+
+// Close modal if clicking outside
+document.getElementById("clearModal").addEventListener("click", function(e) {
+  if (e.target === this) closeModal();
+});
 
 render();
 </script>
