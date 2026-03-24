@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Whittier Narrows Nature Center – Bird Guide</title>
+<style>
+  :root {
+    --green:  #2d6a4f;
+    --green2: #40916c;
+    --green3: #74c69d;
+    --cream:  #f8f4ef;
+    --card:   #ffffff;
+    --text:   #2c2c2c;
+    --muted:  #6b7280;
+    --border: #e2e8e4;
+    --shadow: 0 2px 12px rgba(0,0,0,.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── Header ─────────────────────────────────────────────── */
+  header {
+    background: linear-gradient(135deg, var(--green) 0%, var(--green2) 100%);
+    color: #fff;
+    padding: 32px 24px 24px;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,.18);
+  }
+  header h1 { font-size: clamp(22px, 4vw, 36px); letter-spacing: .5px; }
+  header p  { margin-top: 6px; opacity: .88; font-size: 15px; }
+
+  /* ── Controls ────────────────────────────────────────────── */
+  .controls {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--green);
+    padding: 12px 20px;
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  }
+  .controls input, .controls select {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: none;
+    font-size: 14px;
+    background: rgba(255,255,255,.92);
+    color: var(--text);
+    flex: 1 1 160px;
+    min-width: 130px;
+    outline: none;
+  }
+  .controls input:focus, .controls select:focus {
+    box-shadow: 0 0 0 3px var(--green3);
+  }
+  .controls .count {
+    color: rgba(255,255,255,.85);
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .seen-count {
+    color: #a7f3d0;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  /* Clear All button */
+  .btn-clear {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 2px solid rgba(255,255,255,.5);
+    background: rgba(255,255,255,.12);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s, border-color .15s;
+  }
+  .btn-clear:hover {
+    background: rgba(255,80,80,.35);
+    border-color: rgba(255,180,180,.7);
+  }
+
+  /* ── Category divider ────────────────────────────────────── */
+  .cat-divider {
+    background: var(--green2);
+    color: #fff;
+    padding: 10px 24px;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: .6px;
+    margin-top: 28px;
+    border-left: 6px solid var(--green3);
+  }
+
+  /* ── Grid ────────────────────────────────────────────────── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    padding: 20px 20px 40px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* ── Card ────────────────────────────────────────────────── */
+  .card {
+    background: var(--card);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    transition: transform .18s, box-shadow .18s, border-color .2s;
+    display: flex;
+    flex-direction: column;
+    border: 2px solid var(--border);
+  }
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 28px rgba(0,0,0,.14);
+  }
+  /* Seen today highlight */
+  .card.seen {
+    border-color: #34d399;
+    box-shadow: 0 0 0 3px rgba(52,211,153,.25), var(--shadow);
+  }
+  .card.seen .card-img-wrap::after {
+    content: "✓ Seen Today";
+    position: absolute;
+    bottom: 8px; right: 8px;
+    background: #059669;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    letter-spacing: .3px;
+  }
+
+  /* ── Image area ──────────────────────────────────────────── */
+  .card-img-wrap {
+    width: 100%;
+    background: #e8f0ec;
+    position: relative;
+    overflow: hidden;
+  }
+  .card-img-wrap img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+    transition: transform .3s;
+  }
+  .card:hover .card-img-wrap img { transform: scale(1.03); }
+  .card-img-wrap .no-photo {
+    width: 100%;
+    min-height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    color: var(--muted);
+    font-size: 13px;
+    gap: 8px;
+    padding: 32px;
+  }
+  .card-img-wrap .no-photo svg { opacity: .35; }
+
+  /* ── Badges ──────────────────────────────────────────────── */
+  .cat-badge {
+    position: absolute;
+    top: 8px; left: 8px;
+    background: rgba(45,106,79,.82);
+    color: #fff;
+    font-size: 10px; font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 20px;
+    letter-spacing: .3px;
+    backdrop-filter: blur(4px);
+    max-width: calc(100% - 16px);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .num-badge {
+    position: absolute;
+    top: 8px; right: 8px;
+    background: rgba(0,0,0,.45);
+    color: #fff;
+    font-size: 11px; font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+  }
+
+  /* ── Card body ───────────────────────────────────────────── */
+  .card-body {
+    padding: 14px 16px 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .card-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .card-body h2 {
+    font-size: 17px;
+    color: var(--green);
+    line-height: 1.3;
+    flex: 1;
+  }
+
+  /* ── Seen Today checkbox ─────────────────────────────────── */
+  .seen-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+    user-select: none;
+    padding: 3px 0;
+    transition: color .15s;
+  }
+  .seen-label:hover { color: #059669; }
+  .seen-label input[type="checkbox"] { display: none; }
+  .seen-checkbox-box {
+    width: 20px; height: 20px;
+    border: 2px solid #d1d5db;
+    border-radius: 6px;
+    background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color .15s, background .15s;
+    flex-shrink: 0;
+  }
+  .seen-label input:checked + .seen-checkbox-box {
+    background: #059669;
+    border-color: #059669;
+  }
+  .seen-label input:checked + .seen-checkbox-box::after {
+    content: "✓";
+    color: #fff;
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 1;
+  }
+  .seen-label input:checked ~ .seen-text {
+    color: #059669;
+  }
+
+  /* ── Info rows ───────────────────────────────────────────── */
+  .info-block { display: flex; flex-direction: column; gap: 7px; }
+  .info-row {
+    display: flex; gap: 8px;
+    align-items: flex-start;
+    font-size: 13px; line-height: 1.5;
+  }
+  .info-icon {
+    flex-shrink: 0; width: 20px;
+    text-align: center; margin-top: 1px; font-size: 15px;
+  }
+  .info-label {
+    font-weight: 600; color: var(--green2);
+    min-width: 52px; flex-shrink: 0;
+  }
+  .info-text { color: #444; }
+
+  /* ── Protected tag ───────────────────────────────────────── */
+  .protected-tag {
+    display: inline-block;
+    background: #fef3c7; color: #92400e;
+    font-size: 10px; font-weight: 700;
+    padding: 2px 7px; border-radius: 12px;
+    border: 1px solid #fcd34d;
+    margin-left: 6px; vertical-align: middle;
+  }
+
+  /* ── Footer ──────────────────────────────────────────────── */
+  footer {
+    text-align: center; padding: 28px;
+    color: var(--muted); font-size: 12px;
+    border-top: 1px solid var(--border);
+    background: #fff;
+  }
+
+  /* ── Empty state ─────────────────────────────────────────── */
+  .empty-msg {
+    grid-column: 1/-1; text-align: center;
+    padding: 60px 20px; color: var(--muted); font-size: 16px;
+  }
+
+  /* ── Clear All confirmation modal ────────────────────────── */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 999;
+    background: rgba(0,0,0,.45);
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 16px;
+    padding: 32px 28px 24px;
+    max-width: 360px; width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  }
+  .modal h3 { font-size: 20px; color: var(--green); margin-bottom: 10px; }
+  .modal p  { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
+  .modal-btns { display: flex; gap: 12px; justify-content: center; }
+  .modal-btns button {
+    padding: 10px 24px; border-radius: 8px;
+    font-size: 14px; font-weight: 600; cursor: pointer; border: none;
+  }
+  .btn-cancel { background: #f3f4f6; color: #374151; }
+  .btn-cancel:hover { background: #e5e7eb; }
+  .btn-confirm { background: #ef4444; color: #fff; }
+  .btn-confirm:hover { background: #dc2626; }
+
+  @media (max-width: 500px) {
+    .card-body h2 { font-size: 15px; }
+    .info-row { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🐦 Whittier Narrows Nature Center</h1>
+  <p>Bird Field Guide &nbsp;·&nbsp; 300 Species &nbsp;·&nbsp; San Gabriel Valley, California</p>
+</header>
+
+<div class="controls">
+  <input type="text" id="searchBox" placeholder="🔍 Search birds..." oninput="render()">
+  <select id="catSelect" onchange="render()">
+    <option value="">All Categories</option>
+  </select>
+  <select id="seenFilter" onchange="render()">
+    <option value="">All Birds</option>
+    <option value="seen">✅ Seen Today Only</option>
+    <option value="unseen">🔲 Not Seen Yet</option>
+  </select>
+  <span class="count" id="countLabel"></span>
+  <span class="seen-count" id="seenLabel"></span>
+  <button class="btn-clear" onclick="confirmClear()">🗑 Clear All Seen</button>
+</div>
+
+<div id="main"></div>
+
+<!-- Confirmation modal -->
+<div class="modal-overlay" id="clearModal">
+  <div class="modal">
+    <h3>Clear All Checkmarks?</h3>
+    <p>This will uncheck all "Seen Today" boxes and give you a fresh start for your next visit.</p>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-confirm" onclick="clearAll()">Yes, Clear All</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  Whittier Narrows Nature Center Bird Guide &nbsp;|&nbsp;
+  1000 N. Durfee Ave, South El Monte, CA &nbsp;|&nbsp;
+  Species data compiled from eBird, iNaturalist &amp; Audubon Society
+</footer>
+
+<script>
+const birds = [
+  [1,"Raptors","Red-tailed Hawk","Large hawk; broad rounded wings. Both sexes: brick-red tail (adults), streaked belly band. Female larger.","Small mammals, rodents, rabbits, birds","Large stick nest in tall trees or cliffs; reuses annually","Red_tailed_Hawk.jpg",""],
+  [2,"Raptors","Red-shouldered Hawk","Medium hawk. Both: rusty barred chest, bold black-and-white wing pattern, banded tail. Female larger.","Frogs, snakes, small mammals, crayfish","Stick nest in tall deciduous trees near water","Red_shouldered_Hawk.jpg",""],
+  [3,"Raptors","Cooper's Hawk","Medium accipiter; rounded tail. Male: blue-gray back, rusty barred breast. Female: brown back, larger.","Small to medium birds, small mammals","Stick platform nest in forest trees, often dense conifers","Coopers_Hawk.jpg",""],
+  [4,"Raptors","Sharp-shinned Hawk","Smallest accipiter; square tail. Male: blue-gray back, rusty barred underparts. Female: brown back, much larger.","Small birds (warblers, sparrows, finches)","Small stick nest hidden in dense conifers","Sharp_shinned_Hawk.jpg",""],
+  [5,"Raptors","White-tailed Kite","Slender. Both: white overall, black shoulder patches. Male slightly brighter. Hovers in flight.","Voles, mice, small rodents","Stick nest high in isolated trees or shrubs in open areas","White-tailed_Kite.jpg",""],
+  [6,"Raptors","Turkey Vulture","Large dark bird. Both sexes: bare red head (gray in juveniles), two-tone underwings, soars with V-shape.","Carrion (dead animals)","No true nest; lays eggs in caves, hollow logs, or dense brush","Turkey_Vulture.jpg",""],
+  [7,"Raptors","American Kestrel","Smallest US falcon. Male: rusty back, blue-gray wings, spotted breast. Female: rusty wings and back, barred.","Insects, small rodents, lizards, small birds","Cavity nester in tree holes or nest boxes","American_Kestrel.jpg",""],
+  [8,"Raptors","Peregrine Falcon","Sleek powerful falcon. Both: dark hood, barred white breast, pointed wings. Female noticeably larger.","Medium birds caught in high-speed dives","Scrape nest on cliff ledges, tall buildings, or bridge structures","Peregrine_Falcon.jpg",""],
+  [9,"Raptors","Prairie Falcon","Pale sandy-brown falcon. Both: dark axillary patches (wingpits). Female larger than male.","Ground squirrels, birds, large insects","Scrape on cliff ledges, rarely uses stick nests","Prairie_Falcon.jpg",""],
+  [10,"Raptors","Merlin","Small compact falcon. Male: blue-gray back, streaked underparts. Female: brown back, heavily streaked.","Small birds, large insects","Uses old crow or hawk nests; sometimes ground nests","Merlin.jpg",""],
+  [11,"Raptors","Osprey","Large fish hawk. Both: white underparts, dark wrist patches, crook-winged. Female has speckled chest necklace.","Almost exclusively live fish","Large stick nest on snags, platforms, or channel markers near water","Osprey.jpg",""],
+  [12,"Raptors","Northern Harrier","Slender; white rump patch. Male: pale gray. Female: brown streaked. Both fly low over fields, owl-like face.","Small rodents, frogs, small birds","Ground nest hidden in tall marsh vegetation","Northern_Harrier.jpg",""],
+  [13,"Raptors","Ferruginous Hawk","Largest US buteo. Both: rusty leggings form V on white belly. Male has grayer head than female.","Ground squirrels, prairie dogs, jackrabbits","Large stick nest on cliffs, trees, or utility poles","Ferruginous_Hawk.jpg",""],
+  [14,"Raptors","Rough-legged Hawk","Large pale hawk. Both: dark belly band, black wrist patches, hovers. Dark morph also occurs.","Voles, lemmings, small rodents","Stick nest on arctic cliffs; winters in open fields","Rough_legged_Hawk.jpg",""],
+  [15,"Raptors","Zone-tailed Hawk","Slender. Both: mimics Turkey Vulture in flight, banded tail. Sexes similar.","Small vertebrates, lizards, frogs","Stick nest in tall trees in riparian areas","Zone_tailed_Hawk.jpg",""],
+  [16,"Raptors","Swainson's Hawk","Slim hawk. Male: dark bib, pale underparts, long pointed wings. Female: paler, browner bib.","Insects (migration), rodents (breeding)","Stick nest in isolated trees in open country","Swainsons_Hawk.jpg",""],
+  [17,"Raptors","Bald Eagle","Very large. Adult both: white head and tail, massive yellow bill. Immatures mottled brown. Female larger.","Fish, waterfowl, carrion","Enormous stick nest (eyrie) in tall trees near water; reused for decades","Bald_Eagle.jpg",""],
+  [18,"Raptors","Golden Eagle","Very large dark eagle. Both: golden nape, long broad wings. Female larger.","Rabbits, ground squirrels, prairie dogs","Large stick nest on cliff ledges or large trees","Golden_Eagle.jpg",""],
+  [19,"Owls","Great Horned Owl","Large owl. Both: prominent ear tufts, yellow eyes, white throat bib, brown barred. Female larger.","Wide variety: rabbits, rodents, skunks, birds","Uses old hawk or crow nests; tree cavities; no nest building","Great_Horned_Owl.jpg",""],
+  [20,"Owls","Barn Owl","Both: heart-shaped white face, pale underparts, silent flight. Female has more spotting on breast.","Rodents almost exclusively (voles, mice, rats)","Cavity nester in barns, hollow trees, cliff crevices","Barn_Owl.jpg",""],
+  [21,"Owls","Burrowing Owl","Both: small, ground-dwelling; long legs, spotted brown, no ear tufts. Sexes similar.","Insects, small rodents, lizards","Nests underground in burrows (digs own or uses prairie dog burrows)","Burrowing_Owl.jpg",""],
+  [22,"Owls","Western Screech-Owl","Both: small; ear tufts, cryptic gray-brown bark pattern. Sexes nearly identical.","Insects, small rodents, small birds","Cavity nester in tree holes or nest boxes","Western_Screech_Owl.jpg",""],
+  [23,"Owls","Short-eared Owl","Medium. Both: pale, streaked breast, small ear tufts, yellow eyes. Female darker and more streaked.","Voles and other small rodents","Ground nest in open grasslands or marshes","Short_eared_Owl.jpg",""],
+  [24,"Owls","Long-eared Owl","Both: slender; long close-set ear tufts, orange facial disc, heavily streaked. Sexes similar.","Voles and small rodents primarily","Uses old stick nests of crows or hawks in dense trees","Long_eared_Owl.jpg",""],
+  [25,"Owls","Northern Saw-whet Owl","Both: tiny; rounded head, no ear tufts, reddish-brown streaks, yellow eyes. Sexes similar.","Small rodents, especially deer mice","Cavity nester in woodpecker holes or nest boxes","Northern_Saw_whet_Owl.jpg",""],
+  [26,"Waterfowl","Mallard","Male: iridescent green head, yellow bill, rusty chest, white collar. Female: mottled brown, orange-and-brown bill.","Aquatic plants, seeds, insects, small fish","Ground nest hidden in tall grass near water","Mallard.jpg",""],
+  [27,"Waterfowl","American Wigeon","Male: white forehead, green eye patch, pinkish body. Female: brown with gray head.","Aquatic vegetation, grasses","Ground nest in upland meadows near water","American_Wigeon.jpg",""],
+  [28,"Waterfowl","Eurasian Wigeon","Male: chestnut head, buff crown, pink breast. Female: like American Wigeon female but warmer brown.","Aquatic vegetation, grasses","Nests in Europe/Asia; winter visitor here","Eurasian_Wigeon.jpg",""],
+  [29,"Waterfowl","Northern Shoveler","Both have spatula-shaped bill. Male: green head, rusty sides. Female: mottled brown.","Aquatic invertebrates filtered through bill","Ground nest in open meadows near wetlands","Northern_Shoveler.jpg",""],
+  [30,"Waterfowl","Northern Pintail","Male: slender, long pointed tail, white neck stripe, gray body. Female: mottled brown, pointed tail.","Seeds, aquatic invertebrates","Ground nest in open prairie or tundra","Northern_Pintail.jpg",""],
+  [31,"Waterfowl","Green-winged Teal","Smallest dabbler. Male: chestnut head, green eye patch. Female: mottled brown with green wing patch.","Seeds, aquatic invertebrates","Ground nest in dense cover near water","Green_winged_Teal.jpg",""],
+  [32,"Waterfowl","Blue-winged Teal","Male: white facial crescent, sky-blue wing patch. Female: mottled brown with pale blue wing patch.","Seeds, invertebrates","Ground nest in upland meadows near ponds","Blue_winged_Teal.jpg",""],
+  [33,"Waterfowl","Cinnamon Teal","Male: rich cinnamon-red overall, red eye. Female: mottled brown, difficult to tell from Blue-winged.","Seeds, aquatic invertebrates","Ground nest in tall marsh vegetation","Cinnamon_Teal.jpg",""],
+  [34,"Waterfowl","Gadwall","Male: gray-brown, black rump, white wing patch. Female: mottled brown, orange-sided bill.","Aquatic vegetation primarily","Ground nest in upland areas near wetlands","Gadwall.jpg",""],
+  [35,"Waterfowl","Bufflehead","Tiny diving duck. Male: large white head patch, iridescent green/purple head. Female: dark brown, small white cheek patch.","Aquatic invertebrates, small fish","Cavity nester in woodpecker holes near lakes","Bufflehead.jpg",""],
+  [36,"Waterfowl","Canvasback","Male: sloping reddish-brown head, black chest, white body. Female: pale brown with sloping reddish head.","Aquatic plants, tubers, mollusks","Floating nest anchored to marsh vegetation","Canvasback.jpg",""],
+  [37,"Waterfowl","Redhead","Male: round rusty-red head, blue-gray bill with black tip. Female: brown with pale face and similar bill.","Aquatic vegetation, invertebrates","Floating nest or platform nest in dense cattails","Redhead.jpg",""],
+  [38,"Waterfowl","Ring-necked Duck","Male: peaked head, black back, white spur on side, bold bill ring. Female: brown with white eye ring and bill ring.","Aquatic plants, invertebrates","Platform nest in dense emergent marsh vegetation","Ring_necked_Duck.jpg",""],
+  [39,"Waterfowl","Lesser Scaup","Male: peaked purple-glossed head, blue-gray bill. Female: brown with white patch at base of bill.","Aquatic invertebrates, mollusks","Ground nest in upland areas near water","Lesser_Scaup.jpg",""],
+  [40,"Waterfowl","Greater Scaup","Male: rounder green-glossed head, blue bill. Female: similar to Lesser Scaup, larger white bill patch.","Mollusks, aquatic invertebrates","Ground nest on tundra or islands near water","Greater_Scaup.jpg",""],
+  [41,"Waterfowl","Hooded Merganser","Male: fan-shaped white crest, black-and-white body. Female: brown with shaggy rusty crest.","Fish, crayfish, aquatic invertebrates","Cavity nester in tree holes near water","Hooded_Merganser.jpg",""],
+  [42,"Waterfowl","Common Merganser","Male: green head, red serrated bill, white body. Female: rusty head with shaggy crest, white chin.","Fish primarily","Cavity nester in large tree holes near water","Common_Merganser.jpg",""],
+  [43,"Waterfowl","Red-breasted Merganser","Male: shaggy green crest, rusty streaked breast. Female: brown head with shaggy crest.","Fish, aquatic invertebrates","Ground nest hidden under shrubs near water","Red_breasted_Merganser.jpg",""],
+  [44,"Waterfowl","Ruddy Duck","Male (breeding): bright blue bill, chestnut body, white cheek. Female: brown with horizontal cheek stripe.","Aquatic invertebrates, seeds","Platform nest in dense marsh vegetation","Ruddy_Duck.jpg",""],
+  [45,"Waterfowl","Canada Goose","Both: black head and neck, white chin strap, brown body. Sexes identical; male slightly larger.","Grasses, aquatic vegetation, grains","Ground nest near water, often on islands or banks","Canada_Goose.jpg",""],
+  [46,"Waterfowl","Greater White-fronted Goose","Both: grayish-brown, white forehead patch, orange bill, barred belly. Sexes similar.","Grasses, grains, aquatic plants","Ground nest in arctic tundra near water","Greater_White_fronted_Goose.jpg",""],
+  [47,"Waterfowl","Snow Goose","Both: all-white with black wingtips, or dark blue morph. Sexes identical.","Grasses, grains, roots","Ground nest in dense colonies on arctic tundra","Snow_Goose.jpg",""],
+  [48,"Waterfowl","Ross's Goose","Both: like Snow Goose but smaller; stubby bill with blue-gray warty base.","Grasses, grains","Ground nest in tight colonies on arctic tundra","Rosss_Goose.jpg",""],
+  [49,"Waterfowl","Cackling Goose","Both: miniature Canada Goose; short stubby bill, steep forehead. Sexes similar.","Grasses, aquatic vegetation","Ground nest near water on tundra","Cackling_Goose.jpg",""],
+  [50,"Waterfowl","Wood Duck","Male: crested iridescent head with white stripes, red eye. Female: brown with white teardrop eye patch.","Acorns, seeds, aquatic invertebrates","Cavity nester in tree holes near water; uses nest boxes","Wood_Duck.jpg",""],
+  [51,"Waterfowl","Surf Scoter","Male: black with white forehead and neck patches, colorful bill. Female: dark brown with two white face patches.","Mollusks, crustaceans, aquatic invertebrates","Ground nest in boreal forests near water","Surf_Scoter.jpg",""],
+  [52,"Pelicans, Herons & Egrets","American White Pelican","Both: very large white bird; massive orange-yellow bill with pouch. Sexes identical.","Fish (cooperative herding feeding)","Ground nest in colonies on isolated islands","American_White_Pelican.jpg",""],
+  [53,"Pelicans, Herons & Egrets","Brown Pelican","Both: large grayish-brown; long bill with pouch. Breeding adults have brown neck. Sexes similar.","Fish caught by plunge-diving","Stick nest in low trees or shrubs in coastal colonies","Brown_Pelican.jpg",""],
+  [54,"Pelicans, Herons & Egrets","Double-crested Cormorant","Both: large dark waterbird; orange-yellow throat pouch, kinked neck in flight. Sexes similar.","Fish","Stick nest in trees or cliffs in colonies near water","Double_crested_Cormorant.jpg",""],
+  [55,"Pelicans, Herons & Egrets","Neotropic Cormorant","Both: smaller than Double-crested; white-bordered yellow-orange throat pouch. Sexes similar.","Fish, aquatic invertebrates","Stick nest in trees, often mixed colonies","Neotropic_Cormorant.jpg",""],
+  [56,"Pelicans, Herons & Egrets","Great Blue Heron","Both: tallest heron; blue-gray with white face, long neck, slow wingbeats. Sexes similar.","Fish, frogs, rodents, small birds","Large stick platform nest in tall trees (rookery/heronry)","Great_Blue_Heron.jpg",""],
+  [57,"Pelicans, Herons & Egrets","Great Egret","Both: large all-white; yellow bill, black legs. Breeding plumes (aigrettes) on back. Sexes identical.","Fish, frogs, small rodents","Platform stick nest in trees, often in mixed-species colonies","Great_Egret.jpg",""],
+  [58,"Pelicans, Herons & Egrets","Snowy Egret","Both: small all-white; black bill, yellow feet (golden slippers). Breeding: shaggy plumes. Sexes similar.","Small fish, crustaceans, insects","Platform nest in shrubs or low trees in colonies near water","Snowy_Egret.jpg",""],
+  [59,"Pelicans, Herons & Egrets","Little Blue Heron","Adult both: slate-blue. Immature: all white with blue-gray wingtips. Two-toned bill.","Small fish, frogs, crustaceans","Platform nest in shrubs, often in mixed colonies","Little_Blue_Heron.jpg",""],
+  [60,"Pelicans, Herons & Egrets","Tricolored Heron","Both: slender; blue-gray with distinctive white belly stripe and rusty neck. Sexes similar.","Small fish, amphibians","Platform nest in shrubs or low trees in colonies","Tricolored_Heron.jpg",""],
+  [61,"Pelicans, Herons & Egrets","Cattle Egret","Both: small stocky white egret; buff-orange plumes on head/breast/back (breeding). Yellow bill.","Insects, especially grasshoppers; follows livestock","Platform nest in trees or shrubs in colonies","Cattle_Egret.jpg",""],
+  [62,"Pelicans, Herons & Egrets","Black-crowned Night Heron","Both: stocky; black crown and back, gray wings, red eyes. Sexes similar; female slightly smaller.","Fish, invertebrates, small rodents","Platform nest in trees or shrubs, often in colonies","Black_crowned_Night_Heron.jpg",""],
+  [63,"Pelicans, Herons & Egrets","Yellow-crowned Night Heron","Both: gray with bold black-and-white head, yellow-buff crown. Sexes similar.","Crustaceans (especially crabs), insects","Platform nest in trees, sometimes solitary","Yellow_crowned_Night_Heron.jpg",""],
+  [64,"Pelicans, Herons & Egrets","Green Heron","Both: small compact; chestnut neck, dark green back, yellow-orange legs. Sexes similar.","Small fish, frogs, aquatic invertebrates","Platform nest in trees or dense shrubs near water","Green_Heron.jpg",""],
+  [65,"Pelicans, Herons & Egrets","Least Bittern","Male: black crown and back, chestnut sides. Female: brown crown and back, buffy streaking.","Small fish, frogs, invertebrates","Platform nest in dense marsh vegetation over water","Least_Bittern.jpg",""],
+  [66,"Pelicans, Herons & Egrets","American Bittern","Both: medium brown streaked heron; secretive, points bill skyward when alarmed. Sexes similar.","Fish, frogs, small rodents","Ground nest hidden in dense marsh vegetation","American_Bittern.jpg",""],
+  [67,"Pelicans, Herons & Egrets","White-faced Ibis","Both: iridescent bronze-green, decurved bill, red eye. Breeding: white feathers border red face.","Worms, crayfish, aquatic invertebrates","Platform nest in dense marsh vegetation or shrubs","White_faced_Ibis.jpg",""],
+  [68,"Shorebirds & Waders","Killdeer","Both: double black breast bands, orange-red rump in flight, brown above. Sexes identical.","Earthworms, beetles, grasshoppers","Ground nest (scrape) in gravel, open fields, or rooftops","Killdeer.jpg",""],
+  [69,"Shorebirds & Waders","Spotted Sandpiper","Breeding: both have bold spots on breast. Non-breeding: plain white breast. Bobs tail constantly.","Insects, small fish, crustaceans","Ground nest hidden near water's edge","Spotted_Sandpiper.jpg",""],
+  [70,"Shorebirds & Waders","Wilson's Snipe","Both: stocky; very long bill, cryptic brown streaked plumage. Sexes similar.","Worms, insects, invertebrates probed from mud","Ground nest hidden in wet meadows or marshes","Wilsons_Snipe.jpg",""],
+  [71,"Shorebirds & Waders","Greater Yellowlegs","Both: tall shorebird; bright yellow legs, slightly upturned bill. Sexes similar.","Fish, invertebrates, small amphibians","Ground nest in boreal bogs and muskeg","Greater_Yellowlegs.jpg",""],
+  [72,"Shorebirds & Waders","Lesser Yellowlegs","Both: smaller version of Greater; straighter thinner bill. Sexes similar.","Invertebrates, small fish","Ground nest in boreal openings near water","Lesser_Yellowlegs.jpg",""],
+  [73,"Shorebirds & Waders","Willet","Both: large stocky; bold black-and-white wing pattern in flight, gray at rest. Sexes similar.","Invertebrates, small fish, seeds","Ground nest in coastal marshes or prairies","Willet.jpg",""],
+  [74,"Shorebirds & Waders","Whimbrel","Both: large; strongly decurved bill, striped head. Sexes similar.","Crabs, berries, invertebrates","Ground nest in arctic or subarctic tundra","Whimbrel.jpg",""],
+  [75,"Shorebirds & Waders","Long-billed Dowitcher","Both: stocky; very long bill, rusty underparts in breeding, gray in winter. Female slightly larger.","Invertebrates probed from soft mud","Ground nest in wet tundra","Long_billed_Dowitcher.jpg",""],
+  [76,"Shorebirds & Waders","Short-billed Dowitcher","Both: similar to Long-billed; slightly shorter bill, paler in non-breeding. Sexes similar.","Invertebrates, worms, small mollusks","Ground nest in boreal forests and tundra","Short_billed_Dowitcher.jpg",""],
+  [77,"Shorebirds & Waders","Dunlin","Both: drooped bill tip; black belly patch (breeding), gray-brown (winter). Sexes similar.","Invertebrates, worms, insect larvae","Ground nest in tundra near coast","Dunlin.jpg",""],
+  [78,"Shorebirds & Waders","Least Sandpiper","Both: tiny brownish sandpiper; yellow-green legs. Sexes similar; female slightly larger.","Tiny invertebrates, seeds","Ground nest hidden in subarctic tundra or bogs","Least_Sandpiper.jpg",""],
+  [79,"Shorebirds & Waders","Western Sandpiper","Both: small; black legs, drooped bill tip, rufous scapulars in breeding. Sexes similar.","Tiny invertebrates, algae","Ground nest on arctic tundra","Western_Sandpiper.jpg",""],
+  [80,"Shorebirds & Waders","Baird's Sandpiper","Both: buffy-brown; wing tips extend past tail, scaly back. Sexes similar.","Invertebrates, insects","Ground nest in high arctic tundra","Bairds_Sandpiper.jpg",""],
+  [81,"Shorebirds & Waders","Pectoral Sandpiper","Both: sharp contrast between streaked breast and clean white belly. Female smaller than male.","Invertebrates, insects","Ground nest in arctic tundra","Pectoral_Sandpiper.jpg",""],
+  [82,"Shorebirds & Waders","Semipalmated Sandpiper","Both: small; short straight bill, webbing between front toes. Sexes similar.","Invertebrates, seeds","Ground nest in open arctic tundra","Semipalmated_Sandpiper.jpg",""],
+  [83,"Shorebirds & Waders","Semipalmated Plover","Both: single brown breast band, orange-yellow bill base. Sexes similar.","Invertebrates, small mollusks","Ground scrape nest on beaches or gravel bars","Semipalmated_Plover.jpg",""],
+  [84,"Shorebirds & Waders","Black-bellied Plover","Breeding male: black belly and face, white above. Female breeding: less black below. Winter: gray-brown.","Invertebrates, worms","Ground nest on high arctic tundra","Black_bellied_Plover.jpg",""],
+  [85,"Shorebirds & Waders","American Golden-Plover","Breeding male: spangled gold-and-black, white stripe on sides. Female: duller, less black below.","Invertebrates, berries, insects","Ground scrape nest on dry arctic tundra","American_Golden_Plover.jpg",""],
+  [86,"Shorebirds & Waders","American Avocet","Both: elegant; upcurved bill, black-and-white body. Breeding: rusty head and neck. Winter: gray head.","Aquatic invertebrates, seeds","Scrape nest on bare ground near shallow water","American_Avocet.jpg",""],
+  [87,"Shorebirds & Waders","Black-necked Stilt","Male: black back and head, white underparts, pink-red legs. Female: brown back (not black).","Aquatic invertebrates, small fish","Scrape nest near water, sometimes floating","Black_necked_Stilt.jpg",""],
+  [88,"Shorebirds & Waders","Marbled Godwit","Both: large; long slightly upturned bill, cinnamon-brown overall. Sexes similar; female larger.","Worms, invertebrates, tubers","Ground nest in prairies near water","Marbled_Godwit.jpg",""],
+  [89,"Gulls & Terns","Ring-billed Gull","Both: medium; yellow bill with black ring, pale gray back, yellow legs. Sexes identical.","Omnivorous: fish, insects, refuse, grains","Ground nest in colonies on islands","Ring_billed_Gull.jpg",""],
+  [90,"Gulls & Terns","California Gull","Both: medium; yellow bill with red-and-black spot, dark eyes, greenish legs. Sexes identical.","Fish, insects, refuse, small rodents","Ground nest in colonies near lakes or marshes","California_Gull.jpg",""],
+  [91,"Gulls & Terns","Herring Gull","Both: large; pink legs, yellow bill with red spot, pale gray back. Sexes identical; male larger.","Fish, invertebrates, carrion, refuse","Ground nest in colonies on coastal or lake islands","Herring_Gull.jpg",""],
+  [92,"Gulls & Terns","Western Gull","Both: large dark-backed; pink legs, yellow bill with red spot. Sexes identical; male larger.","Fish, marine invertebrates, carrion","Ground nest on rocky coastal islands","Western_Gull.jpg",""],
+  [93,"Gulls & Terns","Heermann's Gull","Both: distinctive dark gray; red bill, white head (breeding), dark head (winter). Sexes identical.","Fish stolen from other seabirds, invertebrates","Ground nest on coastal islands","Heermanns_Gull.jpg",""],
+  [94,"Gulls & Terns","Bonaparte's Gull","Both: small dainty; black head (breeding), white with dark ear spot (winter), thin black bill.","Small fish, insects, invertebrates","Conifer tree nest (unique among gulls)","Bonapartes_Gull.jpg",""],
+  [95,"Gulls & Terns","Laughing Gull","Both: medium; black hood, dark gray back, red bill (breeding). Sexes identical; male slightly larger.","Fish, invertebrates, refuse","Ground nest in salt marsh or sandy beaches","Laughing_Gull.jpg",""],
+  [96,"Gulls & Terns","Forster's Tern","Both: medium; orange bill with black tip, pale gray wings, black cap (breeding). Sexes similar.","Small fish caught by plunge-diving","Ground scrape on marsh or island","Forsters_Tern.jpg",""],
+  [97,"Gulls & Terns","Caspian Tern","Both: largest tern; heavy coral-red bill, black cap. Sexes identical; male slightly larger.","Fish caught by plunge-diving","Scrape nest in colonies on open ground or islands","Caspian_Tern.jpg",""],
+  [98,"Gulls & Terns","Black Tern","Breeding: both dark gray-black body, white undertail. Non-breeding: white with dark ear patch.","Insects, small fish, invertebrates","Floating platform nest in marsh vegetation","Black_Tern.jpg",""],
+  [99,"Pigeons & Doves","Rock Pigeon","Both: variable gray, white, brown plumage; iridescent neck. Sexes nearly identical.","Seeds, grains, bread, refuse","Ledge nest on buildings, bridges, or cliffs","Rock_Pigeon.jpg",""],
+  [100,"Pigeons & Doves","Band-tailed Pigeon","Both: large gray; white neck band over iridescent patch, yellow bill with black tip. Sexes similar.","Acorns, berries, seeds, nuts","Small stick platform nest in trees","Band_tailed_Pigeon.jpg",""],
+  [101,"Pigeons & Doves","Eurasian Collared-Dove","Both: pale gray; black half-collar on neck. Sexes identical.","Seeds, grains, small invertebrates","Loose stick nest in trees or shrubs","Eurasian_Collared_Dove.jpg",""],
+  [102,"Pigeons & Doves","Mourning Dove","Both: slender; buff-brown, black spots on wings, long pointed tail. Male has pinkish breast wash.","Seeds almost exclusively","Flimsy stick platform nest in trees or shrubs","Mourning_Dove.jpg",""],
+  [103,"Pigeons & Doves","Common Ground-Dove","Both: tiny; scaly neck, short tail. Male: gray-pink head. Female: brownish. Rufous wing flash.","Small seeds, berries","Loose nest on or near ground in low shrubs","Common_Ground_Dove.jpg",""],
+  [104,"Pigeons & Doves","Inca Dove","Both: small scaly-looking; long tail with white outer edges. Sexes similar.","Seeds","Neat cup nest in trees or shrubs","Inca_Dove.jpg",""],
+  [105,"Hummingbirds","Anna's Hummingbird","Male: brilliant rose-red gorget and crown. Female: green above, pale below with red-spotted throat.","Nectar, small insects, spiders","Cup nest on branch, often covered in lichen","Annas_Hummingbird.jpg",""],
+  [106,"Hummingbirds","Allen's Hummingbird","Male: green back, rufous sides, orange-red gorget. Female: green above, rusty flanks.","Nectar, insects, spiders","Tiny cup nest on twig or branch, often in willows","Allens_Hummingbird.jpg",""],
+  [107,"Hummingbirds","Black-chinned Hummingbird","Male: black chin with purple lower gorget. Female: green above, pale below.","Nectar, insects, spiders","Tiny cup nest on thin branch, often near water","Black_chinned_Hummingbird.jpg",""],
+  [108,"Hummingbirds","Rufous Hummingbird","Male: brilliant rufous overall, orange-red gorget. Female: green above, rusty-buff flanks, spotted throat.","Nectar, insects, spiders","Cup nest in conifer or shrub in Pacific Northwest","Rufous_Hummingbird.jpg",""],
+  [109,"Hummingbirds","Calliope Hummingbird","Male: streaked magenta gorget rays on white background. Female: green above, peachy flanks, tiny size.","Nectar, small insects","Tiny cup nest often stacked on old nests in conifers","Calliope_Hummingbird.jpg",""],
+  [110,"Hummingbirds","Costa's Hummingbird","Male: violet-purple crown and long flared gorget. Female: green above, white below.","Desert flowers, insects","Cup nest in desert shrubs or cacti","Costas_Hummingbird.jpg",""],
+  [111,"Rails & Coots","American Coot","Both: chunky slate-black; distinctive white bill with dark ring, lobed feet, red eye. Sexes identical.","Aquatic vegetation, algae, invertebrates","Floating platform nest in marsh vegetation","American_Coot.jpg",""],
+  [112,"Rails & Coots","Common Gallinule","Both: dark with red-and-yellow bill, white side stripe, green legs. Sexes similar; male slightly larger.","Aquatic plants, invertebrates, seeds","Platform nest in or near marsh vegetation","Common_Gallinule.jpg",""],
+  [113,"Rails & Coots","Virginia Rail","Both: rusty breast, long reddish bill, gray face, barred flanks. Sexes similar; female paler.","Invertebrates, snails, seeds","Cup nest in dense marsh vegetation","Virginia_Rail.jpg",""],
+  [114,"Rails & Coots","Sora","Both: gray face, yellow bill, black mask, barred flanks. Female slightly paler mask.","Seeds, aquatic invertebrates","Cup nest woven into marsh vegetation","Sora.jpg",""],
+  [115,"Rails & Coots","Black Rail","Male: dark gray with rusty nape, white flecks. Female: paler rusty-brown below.","Seeds, small invertebrates","Ground nest hidden deep in dense marsh grass","Black_Rail.jpg",""],
+  [116,"Rails & Coots","Clapper Rail","Both: large chicken-like; grayish-brown, long bill, barred flanks. Sexes similar.","Crabs, invertebrates, small fish","Platform nest in cordgrass or bulrush","Clapper_Rail.jpg",""],
+  [117,"Kingfishers","Belted Kingfisher","Male: blue-gray breast band only. Female: blue-gray band PLUS rusty belly band (female more colorful!).","Fish, crayfish, aquatic invertebrates","Burrow nest excavated in earthen bank near water","Belted_Kingfisher.jpg",""],
+  [118,"Woodpeckers","Nuttall's Woodpecker","Male: red rear crown, black-and-white ladder back. Female: no red on crown, otherwise similar.","Insects and larvae from bark, some berries","Cavity excavated in dead wood, often oaks or willows","Nuttalls_Woodpecker.jpg",""],
+  [119,"Woodpeckers","Downy Woodpecker","Male: red patch on back of head. Female: no red. Both tiny, white back stripe, small bill.","Insects, insect larvae, some berries and seeds","Cavity excavated in dead tree branches","Downy_Woodpecker.jpg",""],
+  [120,"Woodpeckers","Hairy Woodpecker","Male: red patch on back of head. Female: no red. Larger version of Downy, longer bill.","Insects, especially wood-boring beetles","Cavity excavated in dead or live trees","Hairy_Woodpecker.jpg",""],
+  [121,"Woodpeckers","Acorn Woodpecker","Both: clown-like face; red cap (male larger), white eye and cheek, black back. Social species.","Acorns (staple), insects, sap, berries","Cavity in granary or dead tree; colonial nesting","Acorn_Woodpecker.jpg",""],
+  [122,"Woodpeckers","Northern Flicker","Both: brown barred back, black bib, spotted belly. Male has red mustache stripe; female lacks it.","Ants and beetles; forages on ground","Cavity in dead trees or utility poles","Northern_Flicker.jpg",""],
+  [123,"Woodpeckers","Red-breasted Sapsucker","Both: entirely red head and breast, yellow belly. Sexes nearly identical.","Sap, insects, berries","Cavity in live or dead trees, often aspens","Red_breasted_Sapsucker.jpg",""],
+  [124,"Woodpeckers","Red-naped Sapsucker","Male: red nape, crown, and chin. Female: red nape and crown, white chin. Both: yellow belly.","Sap, insects, berries","Cavity in dead trees in mountain forests","Red_naped_Sapsucker.jpg",""],
+  [125,"Woodpeckers","Yellow-bellied Sapsucker","Male: red crown and chin. Female: red crown, white chin. Both: white wing patch, yellow-tinged belly.","Sap, insects, cambium","Cavity in live trees, often birches","Yellow_bellied_Sapsucker.jpg",""],
+  [126,"Woodpeckers","Lewis's Woodpecker","Both: dark greenish-black; pink belly, red face, gray collar. Slow crow-like flight. Sexes identical.","Insects caught in flight, acorns, berries","Cavity in dead or burned trees","Lewiss_Woodpecker.jpg",""],
+  [127,"Woodpeckers","White-headed Woodpecker","Both: white head on black body; white wing patch. Male has red patch on back of head.","Pine seeds, insects","Cavity in dead or dying pine trees","White_headed_Woodpecker.jpg",""],
+  [128,"Flycatchers","Black Phoebe","Both: small black-and-white; bobs tail, near water. Sexes identical.","Flying insects","Mud-and-grass cup nest under bridges, eaves, or cliff overhangs","Black_Phoebe.jpg",""],
+  [129,"Flycatchers","Say's Phoebe","Both: pale grayish; peachy-cinnamon belly, black tail. Sexes similar.","Insects, small berries","Cup nest on ledges, buildings, or rocky outcrops","Says_Phoebe.jpg",""],
+  [130,"Flycatchers","Vermilion Flycatcher","Male: brilliant red crown and underparts, brown back and mask. Female: brown above, streaked breast, salmon-pink belly.","Flying insects","Cup nest in horizontal tree fork, often near water","Vermilion_Flycatcher.jpg",""],
+  [131,"Flycatchers","Ash-throated Flycatcher","Both: medium; pale gray-brown, whitish throat, rusty tail. Sexes similar.","Insects, small berries","Cavity nester in old woodpecker holes or nest boxes","Ash_throated_Flycatcher.jpg",""],
+  [132,"Flycatchers","Brown-crested Flycatcher","Both: large; gray-brown, yellow belly, rufous tail. Sexes similar; male slightly larger.","Large insects, small lizards, berries","Cavity nester in woodpecker holes in saguaro or trees","Brown_crested_Flycatcher.jpg",""],
+  [133,"Flycatchers","Dusky Flycatcher","Both: small Empidonax; gray-brown, whitish eye ring, long tail. Sexes identical.","Flying insects","Cup nest in upland shrubs or low conifers","Dusky_Flycatcher.jpg",""],
+  [134,"Flycatchers","Gray Flycatcher","Both: gray overall, pumps tail downward (unique among Empidonax). Sexes identical.","Flying insects","Cup nest in sagebrush or low shrubs","Gray_Flycatcher.jpg",""],
+  [135,"Flycatchers","Pacific-slope Flycatcher","Both: olive-brown, teardrop eye ring, yellow-green wash. Sexes nearly identical.","Flying insects, small invertebrates","Cup nest on ledges, banks, or in ferns","Pacific_slope_Flycatcher.jpg",""],
+  [136,"Flycatchers","Western Kingbird","Both: yellow belly, pale gray chest, black tail with white outer edges. Sexes identical.","Large flying insects","Cup nest in trees, utility poles, or structures","Western_Kingbird.jpg",""],
+  [137,"Flycatchers","Cassin's Kingbird","Both: darker gray chest than Western; white chin contrasts sharply, dark tail. Sexes identical.","Large flying insects, some berries","Cup nest in trees or large shrubs","Cassins_Kingbird.jpg",""],
+  [138,"Flycatchers","Tropical Kingbird","Both: like Cassin's but notched brownish tail. Sexes identical.","Large flying insects","Cup nest in trees near water","Tropical_Kingbird.jpg",""],
+  [139,"Flycatchers","Olive-sided Flycatcher","Both: large head; dark vest on white breast, perches on snags. Sexes identical.","Flying insects, especially bees and wasps","Cup nest on horizontal conifer branch near trunk","Olive_sided_Flycatcher.jpg",""],
+  [140,"Flycatchers","Western Wood-Pewee","Both: small; gray-brown, no eye ring, two wing bars. Sexes identical.","Flying insects","Cup nest saddled on horizontal branch","Western_Wood_Pewee.jpg",""],
+  [141,"Flycatchers","Willow Flycatcher","Both: brownish-olive, very faint eye ring. Best told by sneezy fitz-bew song. Sexes identical.","Flying insects","Cup nest in willows or shrubby growth near water","Willow_Flycatcher.jpg",""],
+  [142,"Flycatchers","Least Flycatcher","Both: small Empidonax; bold eye ring, snappy che-BEK call. Sexes identical.","Flying insects","Cup nest in tree fork or shrub, often in woodland","Least_Flycatcher.jpg",""],
+  [143,"Flycatchers","Hammond's Flycatcher","Both: small Empidonax; large head, short bill, long primary projection. Sexes identical.","Flying insects","Cup nest in conifers, often high up","Hammonds_Flycatcher.jpg",""],
+  [144,"Swallows & Swifts","Tree Swallow","Male: iridescent blue-green above, snow-white below. Female: similar but duller; immature brown above.","Flying insects, some berries (bayberry)","Cavity nester in tree holes or nest boxes","Tree_Swallow.jpg",""],
+  [145,"Swallows & Swifts","Violet-green Swallow","Male: iridescent green-and-violet above, white below, white cheek patches. Female: duller, browner above.","Flying insects","Cavity nester in woodpecker holes or nest boxes","Violet_green_Swallow.jpg",""],
+  [146,"Swallows & Swifts","Cliff Swallow","Both: square tail; buff rump patch, rusty face, pale forehead, dark back. Sexes similar.","Flying insects","Gourd-shaped mud nest under bridges or cliff overhangs","Cliff_Swallow.jpg",""],
+  [147,"Swallows & Swifts","Barn Swallow","Male: deep blue above, rusty-orange throat, long forked tail. Female: paler below, shorter tail.","Flying insects","Cup mud nest on beams inside barns or under bridges","Barn_Swallow.jpg",""],
+  [148,"Swallows & Swifts","Northern Rough-winged Swallow","Both: brown above; dingy pale throat, no breast band. Sexes nearly identical.","Flying insects","Burrow nest in earthen banks; uses old kingfisher burrows","Northern_Rough_winged_Swallow.jpg",""],
+  [149,"Swallows & Swifts","Bank Swallow","Both: brown above; distinct brown breast band on white throat. Sexes identical.","Flying insects","Burrow nest excavated in sandy or dirt banks","Bank_Swallow.jpg",""],
+  [150,"Swallows & Swifts","Purple Martin","Male: all dark glossy purple-black. Female and immature: dark above, pale gray below with mottled breast.","Large flying insects, dragonflies","Cavity or gourd nest box in open areas near water","Purple_Martin.jpg",""],
+  [151,"Swallows & Swifts","Vaux's Swift","Both: tiny; cigar-shaped, pale throat, rapid shallow wingbeats. Sexes identical.","Flying insects, aerial plankton","Stick nest inside hollow trees or chimneys; glued with saliva","Vauxs_Swift.jpg",""],
+  [152,"Swallows & Swifts","White-throated Swift","Both: black-and-white patterned, long forked tail. Sexes similar.","Flying insects","Nest in cliff crevices; feathers and saliva used","White_throated_Swift.jpg",""],
+  [153,"Swallows & Swifts","Common Nighthawk","Both: long-winged; white wing patches. Male: white throat and tail band. Female: buff throat.","Flying insects, especially beetles and moths","Ground nester; no nest material, lays on bare ground or rooftops","Common_Nighthawk.jpg",""],
+  [154,"Swallows & Swifts","Lesser Nighthawk","Both: like Common but smaller, rounded wingtips. Male: white throat. Female: buff throat.","Flying insects","Ground nester on bare desert or scrubland floor","Lesser_Nighthawk.jpg",""],
+  [155,"Vireos","Least Bell's Vireo","Both: small olive-gray; faint eye rings, two faint wing bars. Sexes nearly identical.","Insects and spiders","Deep cup nest suspended in low riparian shrubs (willows)","Least_Bells_Vireo.jpg",""],
+  [156,"Vireos","Hutton's Vireo","Both: small; olive-gray, resembles Ruby-crowned Kinglet, thick blue-gray legs, broken eye ring.","Insects and spiders","Pendant cup nest in oak or other trees","Huttons_Vireo.jpg",""],
+  [157,"Vireos","Warbling Vireo","Both: plain olive-gray; white eyebrow, no wing bars; melodious song. Sexes nearly identical.","Caterpillars, insects, berries","Pendant cup nest in deciduous trees, often high up","Warbling_Vireo.jpg",""],
+  [158,"Vireos","Cassin's Vireo","Both: olive-gray; bold white spectacles, white wing bars. Sexes nearly identical; male brighter.","Insects and spiders","Pendant cup nest in conifers or mixed forests","Cassins_Vireo.jpg",""],
+  [159,"Vireos","Blue-headed Vireo","Both: blue-gray head; bold white spectacles, yellow-green sides. Sexes nearly identical.","Insects, spiders, small berries","Pendant cup nest in conifers or mixed forests","Blue_headed_Vireo.jpg",""],
+  [160,"Vireos","Plumbeous Vireo","Both: gray; bold white spectacles, white wing bars, no yellow on sides. Sexes nearly identical.","Insects, spiders","Pendant cup nest in ponderosa pines or oaks","Plumbeous_Vireo.jpg",""],
+  [161,"Vireos","Philadelphia Vireo","Both: small; yellow wash on underparts, no wing bars, dark eye line. Sexes similar.","Insects, spiders, some berries","Pendant cup nest in deciduous trees","Philadelphia_Vireo.jpg",""],
+  [162,"Vireos","Yellow-throated Vireo","Both: bright yellow throat and spectacles, white wing bars, yellow breast. Sexes nearly identical.","Insects, spiders, berries","Pendant cup nest in large deciduous trees","Yellow_throated_Vireo.jpg",""],
+  [163,"Vireos","Red-eyed Vireo","Both: olive-green; gray cap, red iris, bold head stripes. Sexes nearly identical.","Insects, berries in fall","Pendant cup nest in deciduous trees","Red_eyed_Vireo.jpg",""],
+  [164,"Jays, Crows & Ravens","California Scrub-Jay","Both: blue and gray; no crest, long tail, harsh calls. Male brighter blue.","Acorns, seeds, insects, small vertebrates","Stick cup nest in shrubs or low trees","California_Scrub_Jay.jpg",""],
+  [165,"Jays, Crows & Ravens","Steller's Jay","Both: dark blue-black; prominent crest, bold blue wings. Male has brighter blue.","Acorns, seeds, insects, small vertebrates","Bulky stick cup nest in conifers","Stellers_Jay.jpg",""],
+  [166,"Jays, Crows & Ravens","American Crow","Both: all black; intelligent, harsh caw calls. Sexes identical; male slightly larger.","Omnivorous: insects, fruit, eggs, carrion, refuse","Stick nest in tall trees or utility structures","American_Crow.jpg",""],
+  [167,"Jays, Crows & Ravens","Common Raven","Both: very large all-black; wedge-shaped tail, deep croaking call. Male larger.","Omnivorous: carrion, small animals, berries, refuse","Large stick nest on cliff ledges or tall structures","Common_Raven.jpg",""],
+  [168,"Jays, Crows & Ravens","Yellow-billed Magpie","Both: black and white; very long tail, yellow bill (CA endemic). Sexes similar; male slightly larger.","Insects, carrion, seeds, small vertebrates","Domed stick nest in valley oak trees","Yellow_billed_Magpie.jpg",""],
+  [169,"Titmice, Chickadees & Bushtit","Oak Titmouse","Both: small plain gray; short crest, nasal calls. Sexes identical.","Insects, seeds, acorns","Cavity nester in oak woodpecker holes or nest boxes","Oak_Titmouse.jpg",""],
+  [170,"Titmice, Chickadees & Bushtit","Mountain Chickadee","Both: black cap and bib; distinctive white eyebrow stripe, gray sides. Sexes identical.","Insects, seeds, conifer seeds","Cavity nester in snags or nest boxes","Mountain_Chickadee.jpg",""],
+  [171,"Titmice, Chickadees & Bushtit","Chestnut-backed Chickadee","Both: chestnut back; black cap and bib, gray flanks (coastal) or rufous flanks (inland). Sexes similar.","Insects, seeds, berries","Cavity nester in snags, adds fur lining","Chestnut_backed_Chickadee.jpg",""],
+  [172,"Titmice, Chickadees & Bushtit","Bushtit","Both: tiny gray; long tail. Male has dark eyes; female has pale yellow eyes. Travel in active flocks.","Insects, spiders, small larvae","Hanging gourd-shaped nest woven from plant fibers","Bushtit.jpg",""],
+  [173,"Nuthatches & Creepers","White-breasted Nuthatch","Male: white face and breast, blue-gray back, black cap. Female: similar but black cap duller, more gray.","Insects, seeds, acorns cached in bark","Cavity nester in natural holes or old woodpecker cavities","White_breasted_Nuthatch.jpg",""],
+  [174,"Nuthatches & Creepers","Red-breasted Nuthatch","Male: rusty-orange underparts, black eye stripe, black cap. Female: paler cap and underparts.","Conifer seeds, insects","Cavity nester in snags; smears pitch around entrance","Red_breasted_Nuthatch.jpg",""],
+  [175,"Nuthatches & Creepers","Pygmy Nuthatch","Both: tiny; gray-brown cap, pale buff underparts, social flocks. Sexes nearly identical.","Insects, conifer seeds","Cavity nester in ponderosa pine snags; communal roosting","Pygmy_Nuthatch.jpg",""],
+  [176,"Nuthatches & Creepers","Brown Creeper","Both: camouflaged; creeps up bark spirally, thin curved bill, streaked brown. Sexes identical.","Insects and larvae gleaned from bark crevices","Hammock nest behind loose tree bark","Brown_Creeper.jpg",""],
+  [177,"Wrens","Bewick's Wren","Both: long cocked tail with white outer edges, bold white eyebrow. Sexes identical.","Insects, spiders, small invertebrates","Cavity or crevice nest in tree holes, brush piles, or nest boxes","Bewicks_Wren.jpg",""],
+  [178,"Wrens","House Wren","Both: small plain brown; barred wings and tail, bubbly loud song. Sexes nearly identical.","Insects and spiders","Cavity nester in tree holes, nest boxes, or odd containers","House_Wren.jpg",""],
+  [179,"Wrens","Marsh Wren","Both: brown; striped crown, white eyebrow, barred back; lives in cattails. Sexes similar; male larger.","Insects, aquatic invertebrates","Round woven nest attached to cattails or bulrush","Marsh_Wren.jpg",""],
+  [180,"Wrens","Canyon Wren","Both: rusty with white throat; cascading whistled song down scale. Sexes similar.","Insects and spiders from rock crevices","Cup nest in rock crevices or canyon walls","Canyon_Wren.jpg",""],
+  [181,"Wrens","Rock Wren","Both: pale gray-brown; fine streaking, bobs body up and down. Sexes nearly identical.","Insects and spiders","Cup nest in rock crevices; paves entrance with pebbles","Rock_Wren.jpg",""],
+  [182,"Wrens","Winter Wren","Both: tiny; very short tail, dark barred plumage, explosive loud song. Sexes nearly identical.","Insects and spiders in forest understory","Domed nest in upturned roots or dense vegetation","Winter_Wren.jpg",""],
+  [183,"Kinglets & Gnatcatchers","Ruby-crowned Kinglet","Both: tiny olive-green; bold white eye ring. Male has red crown patch (rarely visible). Female lacks red.","Insects, spiders, small berries","Hanging cup nest in conifers","Ruby_crowned_Kinglet.jpg",""],
+  [184,"Kinglets & Gnatcatchers","Golden-crowned Kinglet","Male: orange center in golden crown. Female: yellow center, no orange. Both: bold white eyebrow, black eye stripe.","Insects, spiders, insect eggs","Hanging cup nest in dense conifers","Golden_crowned_Kinglet.jpg",""],
+  [185,"Kinglets & Gnatcatchers","Blue-gray Gnatcatcher","Male: blue-gray above, white below, thin black eyebrow line. Female: duller blue-gray, no black brow.","Insects and spiders","Tiny lichen-covered cup nest on tree branch","Blue_gray_Gnatcatcher.jpg",""],
+  [186,"Kinglets & Gnatcatchers","California Gnatcatcher","Male: blue-gray with black cap, raspy mewing call. Female: brown-gray, no black cap.","Insects and spiders","Small cup nest in coastal sage scrub plants","California_Gnatcatcher.jpg",""],
+  [187,"Thrushes & Bluebirds","American Robin","Male: orange-red breast, gray-brown back, yellow bill, dark head. Female: paler orange breast, browner head.","Earthworms, berries, fruits, insects","Mud-reinforced cup nest in trees or on ledges","American_Robin.jpg",""],
+  [188,"Thrushes & Bluebirds","Hermit Thrush","Both: brown with spotted breast; raises and slowly lowers rusty tail. Sexes nearly identical.","Insects, earthworms, berries","Cup nest on or near ground in dense forest","Hermit_Thrush.jpg",""],
+  [189,"Thrushes & Bluebirds","Swainson's Thrush","Both: olive-brown; spotted breast, bold buffy eye ring. Sexes nearly identical.","Insects, earthworms, berries during migration","Cup nest in shrubs or low trees","Swainsons_Thrush.jpg",""],
+  [190,"Thrushes & Bluebirds","Veery","Both: rusty-brown; lightly spotted breast, flute-like spiraling song. Sexes nearly identical.","Insects, berries, earthworms","Cup nest on or near forest ground","Veery.jpg",""],
+  [191,"Thrushes & Bluebirds","Western Bluebird","Male: bright blue head, back, and wings; rusty-orange breast. Female: gray-blue, washed-out rusty breast.","Insects, earthworms, berries","Cavity nester in old woodpecker holes or nest boxes","Western_Bluebird.jpg",""],
+  [192,"Thrushes & Bluebirds","Mountain Bluebird","Male: sky-blue overall. Female: gray-brown with blue tinge on wings and tail.","Insects caught on ground or hovering, berries","Cavity nester in tree holes or nest boxes","Mountain_Bluebird.jpg",""],
+  [193,"Thrushes & Bluebirds","Townsend's Solitaire","Both: gray; white eye ring, buffy wing patch, salmon-buff wing stripe. Sexes nearly identical.","Berries (especially juniper), insects","Ground or bank nest in conifers or rocky areas","Townsends_Solitaire.jpg",""],
+  [194,"Thrushes & Bluebirds","Varied Thrush","Male: orange eyebrow, black breast band, orange wing bars on dark gray back. Female: duller, brown-gray.","Earthworms, insects, acorns, berries","Cup nest in conifers or dense understory","Varied_Thrush.jpg",""],
+  [195,"Mockingbirds & Thrashers","Northern Mockingbird","Both: gray; white wing patches flash in flight, long tail, sings at night. Sexes nearly identical.","Insects, berries, small vertebrates","Cup nest in dense shrubs or small trees","Northern_Mockingbird.jpg",""],
+  [196,"Mockingbirds & Thrashers","California Thrasher","Both: large curved bill; rufous undertail, brown overall (SoCal specialty!). Sexes identical.","Insects, invertebrates dug from soil, berries","Deep cup nest hidden in dense shrubs or chaparral","California_Thrasher.jpg",""],
+  [197,"Mockingbirds & Thrashers","Sage Thrasher","Both: smallest thrasher; streaked breast, short curved bill. Sexes nearly identical.","Insects, berries, spiders","Cup nest in sagebrush","Sage_Thrasher.jpg",""],
+  [198,"Mockingbirds & Thrashers","Curve-billed Thrasher","Both: heavily spotted breast; long strongly curved bill, orange eye. Sexes nearly identical.","Insects, cactus fruits, seeds","Thorny cup nest in cactus or dense shrubs","Curve_billed_Thrasher.jpg",""],
+  [199,"Mockingbirds & Thrashers","Brown Thrasher","Both: rufous-brown; long tail, streaked breast, yellow eye. Sexes nearly identical.","Insects, berries, acorns, earthworms","Bulky cup nest in dense shrubs or thickets","Brown_Thrasher.jpg",""],
+  [200,"Starlings & Pipits","European Starling","Both: chunky iridescent black; yellow bill (breeding), spotted with white (winter). Sexes nearly identical.","Insects, earthworms, berries, refuse","Cavity nester in tree holes or building crevices","European_Starling.jpg",""],
+  [201,"Starlings & Pipits","American Pipit","Both: slim; buff-brown, streaked breast, wags tail, walks on ground. Sexes nearly identical.","Insects, seeds","Ground nest hidden in tundra or alpine meadows","American_Pipit.jpg",""],
+  [202,"Starlings & Pipits","Sprague's Pipit","Both: pale streaked; scaly back, thin bill; flushes and spirals up high. Sexes nearly identical.","Insects, seeds","Domed ground nest in native grasslands","Spragues_Pipit.jpg",""],
+  [203,"Waxwings","Cedar Waxwing","Both: silky brown; yellow tail tip, red waxy wing tips, black mask, crest. Sexes nearly identical; male slightly brighter.","Berries (cedar, holly, serviceberry), insects","Cup nest in trees; often in loose colonies","Cedar_Waxwing.jpg",""],
+  [204,"Wrentit","Wrentit","Both: small; brown with streaked breast, long cocked tail, bouncing ball call. Sexes nearly identical.","Insects, spiders, small berries","Deep woven cup nest in chaparral shrubs","Wrentit.jpg",""],
+  [205,"Wood Warblers","Yellow Warbler","Male: all-yellow with rusty breast streaks, black eye. Female: yellow-green, faint or no streaks.","Insects and caterpillars","Cup nest in willows or shrubs near water","Yellow_Warbler.jpg",""],
+  [206,"Wood Warblers","Yellow-rumped Warbler","Male: bold yellow rump, sides, crown; black streaking. Female: browner, same pattern but duller.","Insects, berries (myrtle berries in winter)","Cup nest in conifers","Yellow_rumped_Warbler.jpg",""],
+  [207,"Wood Warblers","Yellow-breasted Chat","Both: yellow breast, white spectacles, thick bill. Male sings loudly; sexes nearly identical.","Insects, berries, spiders","Cup nest in dense thickets near water","Yellow_breasted_Chat.jpg",""],
+  [208,"Wood Warblers","Common Yellowthroat","Male: black mask, yellow throat, olive back. Female: no mask, yellow throat less bright, olive overall.","Insects, spiders","Cup nest near ground in marsh or dense vegetation","Common_Yellowthroat.jpg",""],
+  [209,"Wood Warblers","Orange-crowned Warbler","Both: dull olive-green; faint streaking, orange crown rarely visible. Sexes nearly identical; female duller.","Insects, nectar, spiders","Cup nest on or near ground in dense shrubs","Orange_crowned_Warbler.jpg",""],
+  [210,"Wood Warblers","Nashville Warbler","Male: gray head, white eye ring, yellow underparts. Female: similar but duller, less yellow.","Insects, spiders","Ground nest hidden in dense vegetation","Nashville_Warbler.jpg",""],
+  [211,"Wood Warblers","MacGillivray's Warbler","Male: dark gray hood, yellow belly, broken white eye arcs. Female: lighter gray hood.","Insects, spiders","Cup nest near ground in dense shrubs","MacGillivrays_Warbler.jpg",""],
+  [212,"Wood Warblers","Wilson's Warbler","Male: black cap, bright yellow forehead and underparts. Female: yellow-green cap or absent.","Insects and spiders","Ground or near-ground nest in willows or dense shrubs","Wilsons_Warbler.jpg",""],
+  [213,"Wood Warblers","Townsend's Warbler","Male: bold yellow-and-black face, black throat. Female: yellow face with olive cheek, no black throat.","Insects, spiders, some sap and honeydew","Cup nest in conifers","Townsends_Warbler.jpg",""],
+  [214,"Wood Warblers","Hermit Warbler","Male: yellow face, black throat. Female: yellow face, no black throat, gray back.","Insects, spiders","Cup nest high in conifers","Hermit_Warbler.jpg",""],
+  [215,"Wood Warblers","Black-throated Gray Warbler","Male: gray with black-and-white head, black throat. Female: similar but white throat.","Insects, spiders","Cup nest in oaks or junipers","Black_throated_Gray_Warbler.jpg",""],
+  [216,"Wood Warblers","Palm Warbler","Both: yellow-brown; bobs tail constantly, yellow undertail. Breeding: rusty cap. Sexes similar.","Insects, seeds, berries","Ground nest in boreal bogs","Palm_Warbler.jpg",""],
+  [217,"Wood Warblers","Pine Warbler","Male: olive-yellow with streaked breast, white wing bars. Female: olive-brown, duller breast.","Pine seeds, insects, berries","Cup nest high in pine trees","Pine_Warbler.jpg",""],
+  [218,"Wood Warblers","Black-and-white Warbler","Male: boldly striped black and white, black throat. Female: white throat, less bold streaking.","Insects and larvae from bark crevices","Ground nest at base of tree or log","Black_and_white_Warbler.jpg",""],
+  [219,"Wood Warblers","American Redstart","Male: black with orange wing and tail patches. Female: gray with yellow patches.","Flying insects caught by sallying","Cup nest in shrubs or low trees","American_Redstart.jpg",""],
+  [220,"Wood Warblers","Tennessee Warbler","Male: gray cap, white eyebrow, olive back. Female: yellowish wash below, olive above.","Insects, nectar","Ground nest in boreal forests","Tennessee_Warbler.jpg",""],
+  [221,"Wood Warblers","Chestnut-sided Warbler","Male: yellow-green cap, chestnut sides (breeding). Female: duller, green cap, less chestnut.","Insects, spiders, berries","Cup nest in shrubby woodland edges","Chestnut_sided_Warbler.jpg",""],
+  [222,"Wood Warblers","Magnolia Warbler","Male: yellow below, heavy black streaking, white tail patches. Female: duller with less streaking.","Insects, spiders","Cup nest in small conifers","Magnolia_Warbler.jpg",""],
+  [223,"Wood Warblers","Bay-breasted Warbler","Male: chestnut crown and sides, buff neck patch. Female: olive-yellow with faint chestnut tones.","Insects, berries","Cup nest in conifers","Bay_breasted_Warbler.jpg",""],
+  [224,"Wood Warblers","Blackpoll Warbler","Male: black cap, white cheeks (breeding). Female: streaked olive-green, no black cap.","Insects, berries","Cup nest in low conifers","Blackpoll_Warbler.jpg",""],
+  [225,"Wood Warblers","Northern Waterthrush","Both: brown; bold white eyebrow, streaked breast, bobs tail. Sexes nearly identical.","Aquatic invertebrates, small fish","Ground nest near water, often in upturned roots","Northern_Waterthrush.jpg",""],
+  [226,"Wood Warblers","Louisiana Waterthrush","Both: like Northern; broader clean white eyebrow, buffy flanks. Sexes nearly identical.","Aquatic invertebrates, crayfish","Ground nest in stream bank cavities","Louisiana_Waterthrush.jpg",""],
+  [227,"Wood Warblers","Connecticut Warbler","Male: complete bold eye ring, gray hood, yellow belly. Female: brownish hood, same eye ring.","Insects, spiders","Ground nest hidden in bogs or wet forests","Connecticut_Warbler.jpg",""],
+  [228,"Sparrows & Towhees","Song Sparrow","Both: heavily streaked; large central breast spot, rounded tail pumping. Sexes nearly identical.","Seeds, insects, berries","Cup nest hidden in low dense shrubs or grass","Song_Sparrow.jpg",""],
+  [229,"Sparrows & Towhees","White-crowned Sparrow","Both: bold black-and-white crown stripes (adults); pink or yellow bill. Immatures have brown crown.","Seeds, insects, berries","Cup nest in shrubs or on ground near shrubs","White_crowned_Sparrow.jpg",""],
+  [230,"Sparrows & Towhees","Golden-crowned Sparrow","Male: bright yellow center of black crown. Female: duller yellow crown with less black. Immature: brown.","Seeds, leaves, flowers, insects","Cup nest on or near ground in dense shrubs","Golden_crowned_Sparrow.jpg",""],
+  [231,"Sparrows & Towhees","Lincoln's Sparrow","Both: finely streaked; buffy breast band, grayish face, moustache stripe. Sexes nearly identical.","Seeds, insects","Ground nest hidden in wet meadow vegetation","Lincolns_Sparrow.jpg",""],
+  [232,"Sparrows & Towhees","Savannah Sparrow","Both: streaked; yellow eyebrow, short notched tail, walks on ground. Sexes nearly identical.","Seeds, insects","Ground nest in open grassy areas","Savannah_Sparrow.jpg",""],
+  [233,"Sparrows & Towhees","Grasshopper Sparrow","Both: flat-headed; buffy breast, short tail, grasshopper-like song. Sexes nearly identical.","Grasshoppers, insects, seeds","Ground nest hidden in native grassland","Grasshopper_Sparrow.jpg",""],
+  [234,"Sparrows & Towhees","Fox Sparrow","Both: large; rusty and gray; heavily streaked, double-scratches ground. Sexes nearly identical.","Seeds, insects","Ground or low shrub nest in dense cover","Fox_Sparrow.jpg",""],
+  [235,"Sparrows & Towhees","Swamp Sparrow","Both: rusty wings; gray face, white throat, dark streaking. Male has brighter rusty cap.","Aquatic invertebrates, seeds","Cup nest in cattail or wet shrub marshes","Swamp_Sparrow.jpg",""],
+  [236,"Sparrows & Towhees","Vesper Sparrow","Both: streaked; white outer tail feathers, rusty shoulder patch. Sexes nearly identical.","Seeds, insects","Ground nest in open dry fields","Vesper_Sparrow.jpg",""],
+  [237,"Sparrows & Towhees","Lark Sparrow","Both: bold harlequin face pattern; white tail corners, central breast spot. Sexes nearly identical.","Seeds, insects","Ground nest or low shrub in open areas","Lark_Sparrow.jpg",""],
+  [238,"Sparrows & Towhees","Black-throated Sparrow","Male: bold black bib, white facial stripes. Female: similar but smaller or absent bib, grayish throat.","Seeds, insects, cactus pulp","Cup nest in desert shrubs or cacti","Black_throated_Sparrow.jpg",""],
+  [239,"Sparrows & Towhees","Bell's Sparrow","Both: gray-brown; bold malar stripe, white eyebrow, dark central breast spot. Sexes nearly identical.","Seeds, insects","Cup nest low in sagebrush or shrubs","Bells_Sparrow.jpg",""],
+  [240,"Sparrows & Towhees","Brewer's Sparrow","Both: pale; finely streaked, no strong markings, thin eye ring. Sexes nearly identical.","Seeds, insects","Cup nest in sagebrush","Brewers_Sparrow.jpg",""],
+  [241,"Sparrows & Towhees","Chipping Sparrow","Breeding: rusty crown, white eyebrow, black eye line. Non-breeding: streaked crown. Sexes nearly identical.","Seeds, insects","Cup nest in trees or shrubs, often uses animal hair","Chipping_Sparrow.jpg",""],
+  [242,"Sparrows & Towhees","Clay-colored Sparrow","Both: pale; crisp head stripes, brownish cheek patch, gray nape. Sexes nearly identical.","Seeds, insects","Cup nest in low shrubs or grasses","Clay_colored_Sparrow.jpg",""],
+  [243,"Sparrows & Towhees","Dark-eyed Junco","Male: slate-gray (Oregon form: brown) with white belly. Female: paler, browner. White outer tail feathers flash.","Seeds, insects","Cup nest on or near ground, often hidden on slopes","Dark_eyed_Junco.jpg",""],
+  [244,"Sparrows & Towhees","California Towhee","Both: large sparrow; plain brown; rusty undertail, squeaky call. Sexes identical.","Seeds, insects, berries","Cup nest in dense shrubs, 1-4 feet up","California_Towhee.jpg",""],
+  [245,"Sparrows & Towhees","Spotted Towhee","Male: black hood and back, rufous sides, white spots on wings. Female: brown hood and back, same pattern.","Seeds, insects, berries, acorns","Ground or low shrub nest in dense undergrowth","Spotted_Towhee.jpg",""],
+  [246,"Sparrows & Towhees","Green-tailed Towhee","Both: rufous crown, white throat, olive-green body, pinkish bill. Sexes nearly identical.","Seeds, insects, berries","Ground or low shrub nest in mountain shrubs","Green_tailed_Towhee.jpg",""],
+  [247,"Blackbirds & Orioles","Red-winged Blackbird","Male: glossy black with red-and-yellow shoulder patches. Female: brown streaked overall, looks like a large sparrow.","Insects, seeds, grains","Cup nest woven into marsh vegetation or shrubs","Red_winged_Blackbird.jpg",""],
+  [248,"Blackbirds & Orioles","Tricolored Blackbird","Male: like Red-winged but red shoulder bordered by white. Female: similar to Red-winged female but darker.","Insects, seeds, grains","Cup nest in dense tule or blackberry colonies","Tricolored_Blackbird.jpg",""],
+  [249,"Blackbirds & Orioles","Yellow-headed Blackbird","Male: bright yellow head, black body, white wing patch. Female: brown with dull yellow head and breast.","Insects, seeds, grains","Woven cup nest attached to cattails over water","Yellow_headed_Blackbird.jpg",""],
+  [250,"Blackbirds & Orioles","Brewer's Blackbird","Male: iridescent greenish-black, yellow eye. Female: plain brownish-gray, dark eye.","Insects, seeds, refuse","Cup nest in trees, shrubs, or on ground","Brewers_Blackbird.jpg",""],
+  [251,"Blackbirds & Orioles","Brown-headed Cowbird","Male: brown head, iridescent black body. Female: plain brownish-gray with faint streaking.","Seeds, insects, grains","Brood parasite - lays eggs in other birds' nests (no own nest)","Brown_headed_Cowbird.jpg",""],
+  [252,"Blackbirds & Orioles","Great-tailed Grackle","Male: very long keel-shaped tail, iridescent purple-black, yellow eye. Female: smaller, brown, pale eyebrow.","Insects, seeds, refuse, small vertebrates","Cup nest in reeds, palms, or trees near water","Great_tailed_Grackle.jpg",""],
+  [253,"Blackbirds & Orioles","Common Grackle","Male: long tail, iridescent bronze body, yellow eye. Female: similar but duller.","Insects, seeds, refuse, small vertebrates","Cup nest in dense conifers or shrubs near water","Common_Grackle.jpg",""],
+  [254,"Blackbirds & Orioles","Bullock's Oriole","Male: orange-and-black; large white wing patch, bold black eye line. Female: yellow-orange head, gray-olive back.","Nectar, insects, caterpillars, berries","Hanging woven pouch nest in sycamore or cottonwood","Bullocks_Oriole.jpg",""],
+  [255,"Blackbirds & Orioles","Hooded Oriole","Male: orange or yellow-orange with black hood and back. Female: olive-yellow above, dull yellow below.","Nectar, insects, spiders","Hanging woven nest, often attached under palm fronds","Hooded_Oriole.jpg",""],
+  [256,"Blackbirds & Orioles","Scott's Oriole","Male: lemon-yellow and black; distinct black back and hood. Female: olive-yellow with faint streaking.","Nectar, insects, cactus fruits","Hanging woven nest in yucca or other plants","Scotts_Oriole.jpg",""],
+  [257,"Blackbirds & Orioles","Orchard Oriole","Male: chestnut and black body. Female: greenish-yellow; no black. Both smaller than other orioles.","Nectar, insects, berries","Small hanging woven nest in trees","Orchard_Oriole.jpg",""],
+  [258,"Grosbeaks & Buntings","Black-headed Grosbeak","Male: orange with black head and wings, massive pale bill. Female: brown-streaked, buffy eyebrow, same bill.","Seeds, insects, berries","Cup nest in trees or tall shrubs","Black_headed_Grosbeak.jpg",""],
+  [259,"Grosbeaks & Buntings","Blue Grosbeak","Male: deep blue with rusty wing bars, large bill. Female: brown with rusty wing bars, same large bill.","Seeds, insects, spiders","Cup nest in shrubs or young trees","Blue_Grosbeak.jpg",""],
+  [260,"Grosbeaks & Buntings","Lazuli Bunting","Male: sky-blue with white wing bars, rusty breast. Female: brown-gray with faint wing bars, buffy breast.","Seeds, insects","Cup nest in shrubs near open areas","Lazuli_Bunting.jpg",""],
+  [261,"Grosbeaks & Buntings","Indigo Bunting","Male: entirely indigo blue with no wing bars. Female: plain brown with faint breast streaking.","Seeds, insects, berries","Cup nest in shrubs or low trees in brushy areas","Indigo_Bunting.jpg",""],
+  [262,"Grosbeaks & Buntings","Painted Bunting","Male: most colorful US bird - blue head, red breast, green back. Female: plain bright green, hard to spot.","Seeds, insects","Cup nest in dense shrubs or vines","Painted_Bunting.jpg",""],
+  [263,"Grosbeaks & Buntings","Western Tanager","Male: yellow body, red head, black back and wings. Female: yellow-green overall, black wings, no red.","Insects, berries, nectar","Cup nest in conifers","Western_Tanager.jpg",""],
+  [264,"Grosbeaks & Buntings","Summer Tanager","Male: entirely rose-red, large bill. Female: olive-yellow overall, no red, same large bill.","Bees, wasps, berries","Cup nest in trees, especially oaks and pines","Summer_Tanager.jpg",""],
+  [265,"Grosbeaks & Buntings","Hepatic Tanager","Male: brick-red with gray cheek, dark bill. Female: olive-yellow with gray cheek, same gray bill.","Insects, berries","Cup nest in pines or oaks in mountains","Hepatic_Tanager.jpg",""],
+  [266,"Finches","House Finch","Male: rosy-red head and breast, brown-streaked wings. Female: plain brown-streaked, no red.","Seeds, buds, small fruits","Cup nest in shrubs, trees, cactus, or building ledges","House_Finch.jpg",""],
+  [267,"Finches","Purple Finch","Male: raspberry-red head and breast, notched tail. Female: boldly streaked brown, strong face pattern.","Seeds, berries, insects","Cup nest in conifers or shrubs","Purple_Finch.jpg",""],
+  [268,"Finches","Cassin's Finch","Male: rose-red cap, paler rose body, straight bill. Female: crisp streaking, two-toned face pattern.","Seeds, buds, berries","Cup nest in conifers at higher elevations","Cassins_Finch.jpg",""],
+  [269,"Finches","Lesser Goldfinch","Male: black cap and back (or green back), bright yellow below. Female: olive-yellow with faint wing bars.","Seeds especially thistle, small insects","Cup nest in shrubs or trees, often near water","Lesser_Goldfinch.jpg",""],
+  [270,"Finches","Lawrence's Goldfinch","Male: gray with yellow wing bars, yellow breast, black face. Female: gray without black face.","Seeds (especially chamise and fiddleneck)","Cup nest in oaks or shrubs in dry woodland","Lawrences_Goldfinch.jpg",""],
+  [271,"Finches","American Goldfinch","Male (breeding): bright yellow with black wings and cap. Female and winter male: olive-yellow, black wings.","Seeds especially thistle","Cup nest in shrubs or small trees; late nester","American_Goldfinch.jpg",""],
+  [272,"Finches","Pine Siskin","Both: streaked brown; yellow wing and tail patches, pointed bill. Sexes nearly identical.","Conifer seeds, thistle seeds, insects","Cup nest in conifers","Pine_Siskin.jpg",""],
+  [273,"Finches","Evening Grosbeak","Male: yellow with black wings, white patches, massive pale bill. Female: gray-brown with yellow tinge, same bill.","Seeds, berries, insects, tree buds","Cup nest in conifers","Evening_Grosbeak.jpg",""],
+  [274,"Finches","House Sparrow","Male: chestnut back, gray crown, black bib. Female: plain brown-streaked, pale eyebrow, no bib.","Seeds, insects, bread crumbs","Messy domed nest in cavities, eaves, or buildings","House_Sparrow.jpg",""],
+  [275,"Exotic Species","Northern Cardinal","Male: brilliant red with crest and black mask. Female: buff-brown with reddish tinges, same crest and mask.","Seeds, insects, berries","Cup nest in dense shrubs; 2-3 broods per year","Northern_Cardinal.jpg",""],
+  [276,"Exotic Species","Orange Bishop","Male (breeding): brilliant orange-red with black belly and mask. Female: streaked brown, sparrow-like.","Seeds especially grass seeds","Woven globe nest in reeds or tall grass","Orange_Bishop.jpg",""],
+  [277,"Exotic Species","Nutmeg Mannikin","Both: brown with scaly pattern on breast, stubby bill. Sexes nearly identical.","Grass seeds primarily","Domed nest in grass or low shrubs","Nutmeg_Mannikin.jpg",""],
+  [278,"Exotic Species","Yellow-chevroned Parakeet","Both: small green; yellow wing chevrons, pale bill. Sexes nearly identical.","Seeds, fruit, blossoms","Cavity nester in palm trees or nest boxes","Yellow_chevroned_Parakeet.jpg",""],
+  [279,"Exotic Species","Lilac-crowned Amazon","Both: medium green parrot; lilac crown, red forehead. Sexes nearly identical.","Fruits, seeds, blossoms, berries","Cavity nester in large trees or palm snags","Lilac_crowned_Amazon.jpg",""],
+  [280,"Exotic Species","Red-crowned Amazon","Both: green parrot; bright red crown, yellow-tipped tail. Sexes nearly identical.","Fruits, seeds, nuts, blossoms","Cavity nester in large trees","Red_crowned_Amazon.jpg",""],
+  [281,"Exotic Species","Mitred Parakeet","Both: large green parakeet; red flecking on face and head. Sexes nearly identical.","Fruits, seeds, berries, blossoms","Cavity nester in tree holes","Mitred_Parakeet.jpg",""],
+  [282,"Exotic Species","Nanday Parakeet","Both: green with black hood; blue chest, long tail. Sexes nearly identical.","Seeds, palm nuts, fruits","Cavity nester in palm trees","Nanday_Parakeet.jpg",""],
+  [283,"Exotic Species","Monk Parakeet","Both: green with gray face and breast. Only parrot that builds a stick nest. Sexes nearly identical.","Seeds, fruits, agricultural crops","Large communal stick nest on utility poles or trees","Monk_Parakeet.jpg",""],
+  [284,"Exotic Species","Eurasian Tree Sparrow","Both: brown cap; black ear patch on white cheek; both sexes look alike (unlike House Sparrow).","Seeds, insects","Cavity nester in tree holes or nest boxes","Eurasian_Tree_Sparrow.jpg",""],
+  [285,"Grebes & Loons","Pied-billed Grebe","Both: stocky; chicken-like bill with black ring (breeding), brown, dives readily. Sexes nearly identical.","Fish, crayfish, aquatic invertebrates","Floating platform nest anchored to marsh vegetation","Pied_billed_Grebe.jpg",""],
+  [286,"Grebes & Loons","Eared Grebe","Breeding: both have golden ear plumes, red eye, black neck. Non-breeding: dark above, pale below.","Aquatic invertebrates, brine shrimp","Floating nest in loose colonies on open water","Eared_Grebe.jpg",""],
+  [287,"Grebes & Loons","Western Grebe","Both: large elegant; black-and-white, long swan-like neck, red eye. Sexes identical; male larger.","Fish caught by spearing underwater","Floating nest anchored to aquatic vegetation","Western_Grebe.jpg",""],
+  [288,"Grebes & Loons","Clark's Grebe","Both: like Western Grebe; white around eye, brighter orange bill. Sexes identical; male larger.","Fish caught by spearing underwater","Floating nest in colonies on open water","Clarks_Grebe.jpg",""],
+  [289,"Grebes & Loons","Horned Grebe","Breeding: golden ear tufts, rusty neck. Non-breeding: white cheeks, dark cap. Sexes similar.","Fish, aquatic invertebrates","Floating nest in wetland marshes","Horned_Grebe.jpg",""],
+  [290,"Grebes & Loons","Red-necked Grebe","Breeding: rusty neck, gray cheeks. Non-breeding: gray neck, white crescent on face. Large yellow bill.","Fish, aquatic invertebrates","Floating nest in freshwater lakes","Red_necked_Grebe.jpg",""],
+  [291,"Grebes & Loons","Common Loon","Breeding: both have black-and-white checkered back, black head. Non-breeding: gray-brown. Sexes similar.","Fish primarily","Ground nest at water's edge on lake islands","Common_Loon.jpg",""],
+  [292,"Grebes & Loons","Pacific Loon","Breeding: gray head with vertical black-and-white neck stripes. Non-breeding: dark above, white below.","Fish, crustaceans","Ground nest on tundra lake shores","Pacific_Loon.jpg",""],
+  [293,"Rare Visitors","Roseate Spoonbill","Both: pink; spatula-shaped bill, bare greenish head. Sexes nearly identical.","Fish, crustaceans swept with bill","Platform nest in mangroves or shrubs in colonies","Roseate_Spoonbill.jpg",""],
+  [294,"Rare Visitors","Wood Stork","Both: large white; bald dark scaly head, black flight feathers. Sexes identical.","Fish trapped in drying pools","Platform nest in tall trees, often cypress or mangrove","Wood_Stork.jpg",""],
+  [295,"Rare Visitors","Sandhill Crane","Both: tall gray; red forehead cap, drooping bustle of feathers. Sexes similar; male larger.","Seeds, roots, insects, small vertebrates","Large mound nest in marshes or wet meadows","Sandhill_Crane.jpg",""],
+  [296,"Rare Visitors","Greater Roadrunner","Both: streaked brown; long tail, runs fast. Male has red-and-white eye patch. Rarely flies.","Lizards, snakes, scorpions, rodents, birds","Stick platform nest in low dense shrubs or cactus","Greater_Roadrunner.jpg",""],
+  [297,"Rare Visitors","Common Poorwill","Both: small cryptic nightjar; gray-brown, short rounded wings. Sexes nearly identical.","Moths, beetles, flying insects","Ground nester; no nest; lays on bare ground or leaf litter","Common_Poorwill.jpg",""],
+  [298,"Rare Visitors","Phainopepla","Male: glossy black, white wing patches in flight, red eye. Female: gray with pale wing patches.","Mistletoe berries, flying insects","Small cup nest in desert mistletoe or palo verde","Phainopepla.jpg",""],
+  [299,"Rare Visitors","Lawrence's Warbler","Both: hybrid of Golden-winged and Blue-winged Warblers; yellow-and-black patterned. Variable.","Insects and spiders","Cup nest near ground in dense shrubby growth","Lawrences_Warbler.jpg",""],
+  [300,"Rare Visitors","Snowy Plover","Both: small pale plover; incomplete breast band, dark ear patch. Male has darker markings.","Small invertebrates, marine worms","Scrape nest on open sandy beaches or alkali flats","Snowy_Plover.jpg",""]
+];
+
+const PHOTO_DIR = "images/";
+const STORAGE_KEY = "wnnc_seen_birds";
+const protectedNames = new Set(["White-tailed Kite","Least Bell's Vireo","California Gnatcatcher"]);
+
+// ── Seen state: stored in localStorage keyed by bird # ────────────────────
+function loadSeen() {
+  try { return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]")); }
+  catch(e) { return new Set(); }
+}
+function saveSeen(set) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify([...set]));
+}
+
+let seenSet = loadSeen();
+
+function toggleSeen(num) {
+  if (seenSet.has(num)) seenSet.delete(num);
+  else seenSet.add(num);
+  saveSeen(seenSet);
+  // Update just this card's visual without full re-render
+  const card = document.querySelector(`.card[data-num="${num}"]`);
+  const cb   = document.querySelector(`#cb_${num}`);
+  if (card) card.classList.toggle("seen", seenSet.has(num));
+  if (cb)   cb.checked = seenSet.has(num);
+  updateSeenLabel();
+}
+
+function updateSeenLabel() {
+  document.getElementById("seenLabel").textContent =
+    `✅ ${seenSet.size} / ${birds.length} seen today`;
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────
+function confirmClear() { document.getElementById("clearModal").classList.add("active"); }
+function closeModal()   { document.getElementById("clearModal").classList.remove("active"); }
+function clearAll() {
+  seenSet.clear();
+  saveSeen(seenSet);
+  closeModal();
+  render();
+}
+
+// ── Build category dropdown ───────────────────────────────────────────────
+const allCats = [...new Set(birds.map(b => b[1]))];
+const sel = document.getElementById("catSelect");
+allCats.forEach(c => {
+  const o = document.createElement("option");
+  o.value = c; o.textContent = c;
+  sel.appendChild(o);
+});
+
+// ── Main render ───────────────────────────────────────────────────────────
+function render() {
+  const q          = document.getElementById("searchBox").value.toLowerCase().trim();
+  const cat        = document.getElementById("catSelect").value;
+  const seenFilter = document.getElementById("seenFilter").value;
+  const mainEl     = document.getElementById("main");
+
+  let filtered = birds;
+  if (cat)  filtered = filtered.filter(b => b[1] === cat);
+  if (q)    filtered = filtered.filter(b =>
+    b[2].toLowerCase().includes(q) ||
+    b[3].toLowerCase().includes(q) ||
+    b[4].toLowerCase().includes(q)
+  );
+  if (seenFilter === "seen")   filtered = filtered.filter(b => seenSet.has(b[0]));
+  if (seenFilter === "unseen") filtered = filtered.filter(b => !seenSet.has(b[0]));
+
+  document.getElementById("countLabel").textContent =
+    `${filtered.length} of ${birds.length} species`;
+  updateSeenLabel();
+
+  if (!filtered.length) {
+    mainEl.innerHTML = '<div class="grid"><div class="empty-msg">🔍 No birds found matching your search.</div></div>';
+    return;
+  }
+
+  // Group by category
+  const groups = {}, groupOrder = [];
+  filtered.forEach(b => {
+    if (!groups[b[1]]) { groups[b[1]] = []; groupOrder.push(b[1]); }
+    groups[b[1]].push(b);
+  });
+
+  let html = "";
+  groupOrder.forEach(c => {
+    html += `<div class="cat-divider">🐦 ${c} <span style="font-weight:400;font-size:13px;opacity:.8">(${groups[c].length})</span></div>`;
+    html += '<div class="grid">';
+    groups[c].forEach(b => {
+      const [num, category, name, id, food, nesting, photo] = b;
+      const isSeen      = seenSet.has(num);
+      const isProtected = protectedNames.has(name);
+      const photoPath   = PHOTO_DIR + photo;
+
+      const imgTag = photo
+        ? `<img src="${photoPath}" alt="${name}" loading="lazy"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+        : "";
+      const noPhotoDiv = `
+        <div class="no-photo" ${photo ? 'style="display:none"' : ''}>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+            <path d="M8 12s1.5-2 4-2 4 2 4 2"/>
+            <line x1="9" y1="9" x2="9.01" y2="9"/>
+            <line x1="15" y1="9" x2="15.01" y2="9"/>
+          </svg>
+          Photo coming soon
+        </div>`;
+
+      html += `
+      <div class="card${isSeen ? ' seen' : ''}" data-num="${num}">
+        <div class="card-img-wrap">
+          ${imgTag}${noPhotoDiv}
+          <span class="cat-badge">${category}</span>
+          <span class="num-badge">#${num}</span>
+        </div>
+        <div class="card-body">
+          <div class="card-title-row">
+            <h2>${name}${isProtected ? '<span class="protected-tag">⚠ Protected</span>' : ''}</h2>
+            <label class="seen-label" title="Mark as seen today">
+              <input type="checkbox" id="cb_${num}" ${isSeen ? 'checked' : ''}
+                onchange="toggleSeen(${num})">
+              <span class="seen-checkbox-box"></span>
+              <span class="seen-text">Seen</span>
+            </label>
+          </div>
+          <div class="info-block">
+            <div class="info-row">
+              <span class="info-icon">🔍</span>
+              <span class="info-label">ID</span>
+              <span class="info-text">${id}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-icon">🌿</span>
+              <span class="info-label">Food</span>
+              <span class="info-text">${food}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-icon">🪺</span>
+              <span class="info-label">Nesting</span>
+              <span class="info-text">${nesting}</span>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+
+  mainEl.innerHTML = html;
+}
+
+// Close modal if clicking outside
+document.getElementById("clearModal").addEventListener("click", function(e) {
+  if (e.target === this) closeModal();
+});
+
+render();
+</script>
+</body>
+</html>
