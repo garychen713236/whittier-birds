@@ -798,8 +798,9 @@ function render() {
         <div class="card-body">
           <div class="card-title-row">
             <h2>${name}${isProtected ? '<span class="protected-tag">⚠ Protected</span>' : ''}</h2>
-            <label class="seen-label" title="Mark as seen today" onclick="toggleSeen(${num})">
-              <input type="checkbox" id="cb_${num}" ${isSeen ? 'checked' : ''}>
+            <label class="seen-label" title="Mark as seen today">
+              <input type="checkbox" id="cb_${num}" ${isSeen ? 'checked' : ''}
+                onchange="toggleSeen(${num})">
               <span class="seen-checkbox-box"></span>
               <span class="seen-text">Seen</span>
             </label>
